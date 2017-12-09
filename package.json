@@ -1,0 +1,49 @@
+{
+  "name": "ml-airPLS",
+  "version": "0.0.1",
+  "description": "Baseline correction using adaptive iteratively reweighted penalized least",
+  "main": "./src/index.js",
+  "files": [
+    "runkit.js",
+    "src"
+  ],
+  "scripts": {
+    "eslint": "eslint src test",
+    "eslint-fix": "npm run eslint -- --fix",
+    "test": "run-s testonly eslint",
+    "test-travis": "eslint src && jest --coverage && codecov",
+    "testonly": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mljs/airPLS.git"
+  },
+  "keywords": [
+    "machine",
+    "learning",
+    "data",
+    "mining",
+    "datamining"
+  ],
+  "author": "Jose Alejandro Bolanos Arroyave <jose.bolanos@correounivalle.edu.co>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mljs/airPLS/issues"
+  },
+  "runkitExampleFilename": "./runkit.js",
+  "homepage": "https://github.com/mljs/airPLS#readme",
+  "jest": {
+    "testEnvironment": "node"
+  },
+  "devDependencies": {
+    "codecov": "^2.3.0",
+    "eslint": "^4.11.0",
+    "eslint-config-cheminfo": "^1.8.0",
+    "eslint-plugin-no-only-tests": "^2.0.0",
+    "jest": "^21.2.1",
+    "npm-run-all": "^4.1.1"
+  },
+  "dependencies": {
+    "ml-matrix": "^5.0.1"
+  }
+}
