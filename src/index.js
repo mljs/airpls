@@ -1,11 +1,11 @@
 'use strict';
 
-const {Matrix, SVD} = require('ml-matrix');
+const {solve, Matrix, SVD} = require('ml-matrix');
 
 function airPls(data, options = {}) {
     let {
         maxIterations = 100,
-        lambda = 10,
+        lambda = 100,
         factorCriterion = 0.001
     } = options;
 
@@ -16,20 +16,18 @@ function airPls(data, options = {}) {
     var weights = new Array(nbPoints).fill(1);
     var identityMatrix = Matrix.eye(nbPoints, nbPoints);
     var derivativeIMatrix = diffMatrix(identityMatrix);
-    var covMatrix = derivativeIMatrix.transposeView().mmul(derivativeIMatrix);
+    var covMatrix = derivativeIMatrix.transpose().mmul(derivativeIMatrix);
 
     var sumNegDifferences = Number.MAX_SAFE_INTEGER;
     for (var iteration = 0; (iteration < maxIterations && Math.abs(sumNegDifferences) > stopCriterion); iteration++) {
         let wMatrix = Matrix.diag(weights, nbPoints, nbPoints);
-        let denominator = Matrix.add(wMatrix, covMatrix.clone().mul(lambda));
-        let numerator = wMatrix.mmul(dataMatrix); // it should be changed for array operation.
+        let leftHandSide = Matrix.add(wMatrix, covMatrix.clone().mul(lambda));
+        let rightHandSide = wMatrix.mmul(dataMatrix); // it should be changed for array operation.
 
-        let svd = new SVD(denominator);
-        var baseline = svd.solve(numerator);
-
+        var baseline = solve(leftHandSide, rightHandSide);
         sumNegDifferences = 0;
         let difference = data.map((e, i) => {
-            let diff = e - baseline[i];
+            let diff = e - baseline[i][0];
             if (diff < 0) sumNegDifferences += diff;
             return diff;
         });
@@ -43,8 +41,8 @@ function airPls(data, options = {}) {
         });
     }
     return {
-        corrected: data.map((e, i) => e - baseline[i]),
-        baseline,
+        corrected: data.map((e, i) => e - baseline[i][0]),
+        baseline: baseline.to1DArray(),
         iteration
     };
 }
