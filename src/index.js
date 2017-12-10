@@ -1,30 +1,40 @@
 'use strict';
 
-const {solve, Matrix, SVD} = require('ml-matrix');
+const {solve, Matrix, CHO} = require('ml-matrix');
 
 function airPls(data, options = {}) {
+    console.time('prepro');
     let {
         maxIterations = 100,
         lambda = 100,
         factorCriterion = 0.001
     } = options;
-
     var nbPoints = data.length;
     var stopCriterion = factorCriterion * data.reduce((sum, e) => Math.abs(e) + sum, 0);
-    var dataMatrix = Matrix.columnVector(data);
 
-    var weights = new Array(nbPoints).fill(1);
     var identityMatrix = Matrix.eye(nbPoints, nbPoints);
+    console.time('diff')
     var derivativeIMatrix = diffMatrix(identityMatrix);
-    var covMatrix = derivativeIMatrix.transpose().mmul(derivativeIMatrix);
-
+    console.timeEnd('diff')
+    var wMatrix = identityMatrix; // recicle
+    console.time('cov');
+    console.log('com', derivativeIMatrix.rows, derivativeIMatrix.columns)
+    var covMatrix = derivativeIMatrix.transpose().mmul(derivativeIMatrix).mul(lambda);
+    console.timeEnd('cov');
     var sumNegDifferences = Number.MAX_SAFE_INTEGER;
+    console.timeEnd('prepro');
     for (var iteration = 0; (iteration < maxIterations && Math.abs(sumNegDifferences) > stopCriterion); iteration++) {
-        let wMatrix = Matrix.diag(weights, nbPoints, nbPoints);
-        let leftHandSide = Matrix.add(wMatrix, covMatrix.clone().mul(lambda));
-        let rightHandSide = wMatrix.mmul(dataMatrix); // it should be changed for array operation.
+        console.time('iteration: ' + iteration);
 
-        var baseline = solve(leftHandSide, rightHandSide);
+        let rightHandSide = covMatrix.clone();
+        let vector = data.map((e, i) => {
+            rightHandSide[i][i] += wMatrix[i][i];
+            return [e * wMatrix[i][i]]
+        });
+        
+        let cho = new CHO(rightHandSide);
+        var baseline = cho.solve(vector);
+
         sumNegDifferences = 0;
         let difference = data.map((e, i) => {
             let diff = e - baseline[i][0];
@@ -32,14 +42,33 @@ function airPls(data, options = {}) {
             return diff;
         });
 
-        difference.forEach((diff, i) => {
+        // let maxNegativeDiff = -1 * Number.MAX_SAFE_INTEGER;
+        // difference.forEach((diff, i) => {
+        //     if (diff >= 0) {
+        //         wMatrix.set(i, i, 0);
+        //     } else {
+        //         wMatrix.set(i, i, Math.exp(iteration * diff / sumNegDifferences));
+        //         if (maxNegativeDiff < diff) maxNegativeDiff = diff;
+        //     }
+        // });
+
+        let maxNegativeDiff = -1 * Number.MAX_SAFE_INTEGER;
+        for (var i = 1, l = nbPoints - 1; i < l; i++) {
+            let diff = difference[i];
             if (diff >= 0) {
-                weights[i] = 0;
+                wMatrix.set(i, i, 0);
             } else {
-                weights[i] = Math.exp(iteration * diff / sumNegDifferences);
+                wMatrix.set(i, i, Math.exp(iteration * diff / sumNegDifferences));
+                if (maxNegativeDiff < diff) maxNegativeDiff = diff;
             }
-        });
+        }
+
+        let value = Math.exp(iteration * maxNegativeDiff / sumNegDifferences);
+        wMatrix.set(0, 0, value);
+        wMatrix.set(l, l, value);
+        console.timeEnd('iteration: ' + iteration);
     }
+    
     return {
         corrected: data.map((e, i) => e - baseline[i][0]),
         baseline: baseline.to1DArray(),
@@ -49,8 +78,8 @@ function airPls(data, options = {}) {
 
 function diffMatrix(matrix) {
     matrix = Matrix.checkMatrix(matrix);
-    var A = matrix.subMatrixView(0, matrix.rows - 2, 0, matrix.columns - 1);
-    var B = matrix.subMatrixView(1, matrix.rows - 1, 0, matrix.columns - 1);
+    var A = matrix.subMatrix(0, matrix.rows - 2, 0, matrix.columns - 1);
+    var B = matrix.subMatrix(1, matrix.rows - 1, 0, matrix.columns - 1);
     return Matrix.sub(B, A);
 }
 
