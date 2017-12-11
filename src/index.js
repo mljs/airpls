@@ -1,6 +1,7 @@
 'use strict';
 
-const {solve, Matrix, CHO} = require('ml-matrix');
+const {CHO} = require('ml-matrix');
+const SparseMatrix = require('ml-sparse-matrix');
 
 function airPls(data, options = {}) {
     console.time('prepro');
@@ -9,17 +10,16 @@ function airPls(data, options = {}) {
         lambda = 100,
         factorCriterion = 0.001
     } = options;
+
     var nbPoints = data.length;
     var stopCriterion = factorCriterion * data.reduce((sum, e) => Math.abs(e) + sum, 0);
 
-    var identityMatrix = Matrix.eye(nbPoints, nbPoints);
     console.time('diff')
-    var derivativeIMatrix = diffMatrix(identityMatrix);
+    var deltaMatrix = getDeltaMatrix(nbPoints);
     console.timeEnd('diff')
-    var wMatrix = identityMatrix; // recicle
+    var wMatrix = SparseMatrix.eye(nbPoints, nbPoints);
     console.time('cov');
-    console.log('com', derivativeIMatrix.rows, derivativeIMatrix.columns)
-    var covMatrix = derivativeIMatrix.transpose().mmul(derivativeIMatrix).mul(lambda);
+    var covMatrix = deltaMatrix.transpose().mmul(deltaMatrix).mul(lambda);
     console.timeEnd('cov');
     var sumNegDifferences = Number.MAX_SAFE_INTEGER;
     console.timeEnd('prepro');
@@ -76,11 +76,12 @@ function airPls(data, options = {}) {
     };
 }
 
-function diffMatrix(matrix) {
-    matrix = Matrix.checkMatrix(matrix);
-    var A = matrix.subMatrix(0, matrix.rows - 2, 0, matrix.columns - 1);
-    var B = matrix.subMatrix(1, matrix.rows - 1, 0, matrix.columns - 1);
-    return Matrix.sub(B, A);
+function getDeltaMatrix(nbPoints) {
+    let matrix = SparseMatrix.eye(nbPoints - 1, nbPoints);
+    for (let i = 0, l = nbPoints-1; i < l; i++) {
+        matrix.set(i, i + 1, -1);
+    }
+    return matrix;
 }
 
 module.exports = airPls;
