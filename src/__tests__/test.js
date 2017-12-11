@@ -1,9 +1,8 @@
-'use strict';
-
-const airPls = require('..');
+import airPLS from '../index';
+import {vector} from '../data/vector';
 
 describe('airPLS test', () => {
     it('Something to test', () => {
-        expect(airPls()).toBe(true);
+        airPLS(vector, {});
     });
 });
