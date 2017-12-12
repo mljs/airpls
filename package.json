@@ -46,6 +46,8 @@
     "rollup": "^0.42.0"
   },
   "dependencies": {
+    "cholesky-solve": "^0.2.1",
+    "cuthill-mckee": "^1.0.0",
     "ml-matrix": "^5.0.1",
     "ml-sparse-matrix": "^1.0.0"
   }
