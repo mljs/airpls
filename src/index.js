@@ -82,7 +82,7 @@ function updateSystem(matrix, yData, weights) {
         if (w === 0) {
             newVector[i] = 0;
         } else {
-            newVector[i] = yData[i] + w;
+            newVector[i] = yData[i] * w;
             newMatrix[diag][2] += w;
         }
     }
