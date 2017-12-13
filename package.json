@@ -36,7 +36,7 @@
     "testEnvironment": "node"
   },
   "devDependencies": {
-    "babel-plugin-transform-es2015-modules-commonjs": "^6.24.1",
+    "babel-plugin-transform-es2015-modules-commonjs": "^6.26.0",
     "codecov": "^2.3.0",
     "eslint": "^4.11.0",
     "eslint-config-cheminfo": "^1.8.0",
@@ -47,8 +47,6 @@
   },
   "dependencies": {
     "cholesky-solve": "^0.2.1",
-    "cuthill-mckee": "^1.0.0",
-    "ml-matrix": "^5.0.1",
-    "ml-sparse-matrix": "^1.0.0"
+    "cuthill-mckee": "^1.0.0"
   }
 }

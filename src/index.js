@@ -18,28 +18,25 @@ function airPLS(data, options = {}) {
     }
 
     console.time('cov');
-    var {A, P} = getDeltaMatrix(nbPoints, lambda, weights); //choice another name
+    var {A, P} = getDeltaMatrix(nbPoints, lambda); //choice another name
     console.timeEnd('cov');
-    return;
-    console.time('decomposition');
-    let cho = Cholesky.prepare(A, nbPoints, P);
-    console.timeEnd('decomposition');
     console.timeEnd('prepro');
-    return;
     var sumNegDifferences = Number.MAX_SAFE_INTEGER;
     for (var iteration = 0; (iteration < maxIterations && Math.abs(sumNegDifferences) > stopCriterion); iteration++) {
         console.time('iteration: ' + iteration);
-
-        let vector = data.map((e, i) => {
-            rightHandSide[i][i] += wMatrix[i][i];
-            return [e * wMatrix[i][i]]
-        });
         
-        var baseline = cho.solve(vector);
+        let [leftHandSide, rightHandSide] = updateSystem(A, data, weights);
 
+        console.time('decomposition');
+        let cho = Cholesky.prepare(leftHandSide, nbPoints, P);
+        console.timeEnd('decomposition');
+
+        console.time('solve');
+        var baseline = cho(rightHandSide);
+        console.timeEnd('solve');
         sumNegDifferences = 0;
         let difference = data.map((e, i) => {
-            let diff = e - baseline[i][0];
+            let diff = e - baseline[i];
             if (diff < 0) sumNegDifferences += diff;
             return diff;
         });
@@ -48,40 +45,61 @@ function airPLS(data, options = {}) {
         for (var i = 1, l = nbPoints - 1; i < l; i++) {
             let diff = difference[i];
             if (diff >= 0) {
-                wMatrix.set(i, i, 0);
+                weights[i] = 0;
             } else {
-                wMatrix.set(i, i, Math.exp(iteration * diff / sumNegDifferences));
+                weights[i] = Math.exp(iteration * diff / sumNegDifferences);
                 if (maxNegativeDiff < diff) maxNegativeDiff = diff;
             }
         }
 
         let value = Math.exp(iteration * maxNegativeDiff / sumNegDifferences);
-        wMatrix.set(0, 0, value);
-        wMatrix.set(l, l, value);
+        weights[0] = value;
+        weights[l] = value;
         console.timeEnd('iteration: ' + iteration);
     }
     
     return {
-        corrected: data.map((e, i) => e - baseline[i][0]),
-        baseline: baseline.to1DArray(),
-        iteration
+        corrected: data.map((e, i) => e - baseline[i]),
+        baseline,
+        iteration,
+        error: sumNegDifferences
     };
 }
 
-function getDeltaMatrix(nbPoints, lambda, weights) {
+function getDeltaMatrix(nbPoints, lambda) {
     var matrix = [];
     for (var i = 0, last = nbPoints - 1; i < last; i++) {
-        matrix.push([i, i, lambda * 2 + weights[i]]);
-        matrix.push([i, i + 1, -lambda]);
-        matrix.push([i + 1, i, -lambda]);
+        matrix.push([i, i, lambda * 2]);
+        matrix.push([i + 1, i, -1 * lambda]);
     }
-    matrix[0][2] = lambda + weights[0];
-    matrix.push([last, last, lambda + weights[last]]);
-    console.log(matrix);
-    console.log(nbPoints);
+    matrix[0][2] = lambda;
+    matrix.push([last, last, lambda]);
     return {A: matrix, P: cuthillMckee(matrix, nbPoints)};
 }
 
+function updateSystem(matrix, vector, weights) {
+    let nbPoints = vector.length;
+    var newMatrix = new Array(matrix.length);
+    var newVector = new Float64Array(nbPoints);
+    for (var i = 0, l = nbPoints - 1; i < l; i++) {
+        let w = weights[i];
+        let diag = i * 2
+        let next = diag + 1;
+        newMatrix[diag] = matrix[diag].slice();
+        newMatrix[next] = matrix[next].slice();
+        if (w === 0) {
+            newVector[i] = 0;
+        } else {
+            newVector[i] = vector[i] + w;
+            newMatrix[diag][2] += w;
+        }
+    }
+    newVector[l] = vector[l] * weights[l];
+    newMatrix[l * 2] = matrix[l * 2].slice(); 
+    newMatrix[l * 2][2] += weights[l];
+
+    return [newMatrix, newVector];
+}
 function cholUpdate(matrix, x) {
     let r, s, c;
     let n = x.length;
