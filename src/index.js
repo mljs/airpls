@@ -2,7 +2,6 @@ import Cholesky from 'cholesky-solve';
 import cuthillMckee from 'cuthill-mckee';
 
 function airPLS(yData, options = {}) {
-    console.time('prepro');
     let {
         maxIterations = 100,
         lambda = 100,
