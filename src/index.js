@@ -4,11 +4,11 @@ import cuthillMckee from 'cuthill-mckee';
 
 /**
  * correct baseline drift by iteratively changing weights of sum square error between the fitted baseline and original signals
- * @param {array} yData - original data
+ * @param {Array} yData - original data
  * @param {object} [options={}] - options
  * @param {number} [options.maxIterations = 100] - maximal number of iterations if the method does not reach the stop criterion
  * @param {number} [options.factorCriterion = 0.001] - factor of the sum of absolute value of original data, to compute stop criterion
- * @param {array} [options.weights] - initial weights vector, default each point has the same weight
+ * @param {Array} [options.weights = [1,1,...]] - initial weights vector, default each point has the same weight
  * @param {number} [options.lambda = 100] - factor of weights matrix in -> [I + lambda D'D]z = x
  */
 function airPLS(yData, options = {}) {
@@ -16,15 +16,11 @@ function airPLS(yData, options = {}) {
     maxIterations = 100,
     lambda = 100,
     factorCriterion = 0.001,
-    weights
+    weights = new Array(yData.length).fill(1)
   } = options;
 
   var nbPoints = yData.length;
   var stopCriterion = factorCriterion * yData.reduce((sum, e) => Math.abs(e) + sum, 0);
-
-  if (!weights) {
-    weights = new Array(nbPoints).fill(1);
-  }
 
   var { lowerTriangularNonZeros, permutationEncodedArray } = getDeltaMatrix(nbPoints, lambda);
 
