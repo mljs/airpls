@@ -48,7 +48,7 @@ function airPLS(yData, options = {}) {
         weights[0] = value;
         weights[l] = value;
     }
-    
+
     return {
         corrected: yData.map((e, i) => e - baseline[i]),
         baseline,
@@ -74,7 +74,7 @@ function updateSystem(matrix, yData, weights) {
     var newVector = new Float64Array(nbPoints);
     for (var i = 0, l = nbPoints - 1; i < l; i++) {
         let w = weights[i];
-        let diag = i * 2
+        let diag = i * 2;
         let next = diag + 1;
         newMatrix[diag] = matrix[diag].slice();
         newMatrix[next] = matrix[next].slice();
@@ -86,7 +86,7 @@ function updateSystem(matrix, yData, weights) {
         }
     }
     newVector[l] = yData[l] * weights[l];
-    newMatrix[l * 2] = matrix[l * 2].slice(); 
+    newMatrix[l * 2] = matrix[l * 2].slice();
     newMatrix[l * 2][2] += weights[l];
 
     return [newMatrix, newVector];
