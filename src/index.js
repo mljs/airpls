@@ -3,13 +3,15 @@ import cuthillMckee from 'cuthill-mckee';
 
 
 /**
- * correct baseline drift by iteratively changing weights of sum square error between the fitted baseline and original signals
+ * Fit the baseline drift by iteratively changing weights of sum square error between the fitted baseline and original signals,
+ * for further information about the parameters you can get the [paper of airPLS](https://github.com/zmzhang/airPLS/blob/master/airPLS_manuscript.pdf)
  * @param {Array} yData - original data
  * @param {object} [options={}] - options
  * @param {number} [options.maxIterations = 100] - maximal number of iterations if the method does not reach the stop criterion
  * @param {number} [options.factorCriterion = 0.001] - factor of the sum of absolute value of original data, to compute stop criterion
  * @param {Array} [options.weights = [1,1,...]] - initial weights vector, default each point has the same weight
  * @param {number} [options.lambda = 100] - factor of weights matrix in -> [I + lambda D'D]z = x
+ * @returns {array} - list with baseline, corrected (original - baseline), iteration and error value.
  */
 function airPLS(yData, options = {}) {
   let {
