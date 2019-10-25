@@ -1,6 +1,5 @@
-import Cholesky from 'cholesky-solve';
 import cuthillMckee from 'cuthill-mckee';
-
+import Cholesky from './choleskySolver';
 
 /**
  * Fit the baseline drift by iteratively changing weights of sum square error between the fitted baseline and original signals,
@@ -18,7 +17,8 @@ function airPLS(yData, options = {}) {
     maxIterations = 100,
     lambda = 100,
     factorCriterion = 0.001,
-    weights = new Array(yData.length).fill(1)
+    weights = new Array(yData.length).fill(1),
+    controlPoints = []
   } = options;
 
   var nbPoints = yData.length;
@@ -30,7 +30,7 @@ function airPLS(yData, options = {}) {
   for (var iteration = 0; (iteration < maxIterations && Math.abs(sumNegDifferences) > stopCriterion); iteration++) {
     let [leftHandSide, rightHandSide] = updateSystem(lowerTriangularNonZeros, yData, weights);
 
-    let cho = Cholesky.prepare(leftHandSide, nbPoints, permutationEncodedArray);
+    let cho = Cholesky(leftHandSide, nbPoints, permutationEncodedArray);
 
     var baseline = cho(rightHandSide);
 
@@ -52,6 +52,7 @@ function airPLS(yData, options = {}) {
     let value = Math.exp(iteration * maxNegativeDiff / sumNegDifferences);
     weights[0] = value;
     weights[l] = value;
+    controlPoints.forEach(i => (weights[i] = value))
   }
 
   return {
@@ -106,4 +107,3 @@ function updateSystem(matrix, yData, weights) {
 
 
 export { airPLS as default };
-
