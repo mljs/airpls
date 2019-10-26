@@ -10,12 +10,14 @@
     "src"
   ],
   "scripts": {
+    "compile": "rollup -c",
+    "build": "cheminfo-build",
+    "prepublishOnly": "npm run compile",
     "eslint": "eslint src",
     "eslint-fix": "npm run eslint -- --fix",
-    "prepublish": "rollup -c",
     "test": "run-s testonly eslint",
     "test-travis": "eslint src && jest --coverage && codecov",
-    "testonly": "jest"
+    "test-only": "jest"
   },
   "repository": {
     "type": "git",
@@ -37,6 +39,7 @@
   },
   "devDependencies": {
     "babel-plugin-transform-es2015-modules-commonjs": "^6.26.0",
+    "cheminfo-build": "^1.0.3",
     "codecov": "^2.3.0",
     "eslint": "^4.11.0",
     "eslint-config-cheminfo": "^1.18.0",
@@ -46,10 +49,9 @@
     "jest": "^21.2.1",
     "jest-matcher-deep-close-to": "^1.0.2",
     "npm-run-all": "^4.1.1",
-    "rollup": "^0.42.0"
+    "rollup": "^1.23.1"
   },
   "dependencies": {
-    "cholesky-solve": "^0.2.1",
     "cuthill-mckee": "^1.0.0"
   }
 }
