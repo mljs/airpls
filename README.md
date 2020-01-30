@@ -12,7 +12,7 @@ It is an javascript implementation of [airPLS](https://github.com/zmzhang/airPLS
 
 ## Installation
 
-`$ npm install ml-airPLS`
+`$ npm install ml-airpls`
 
 ## [API Documentation](https://mljs.github.io/airPLS/)
 
