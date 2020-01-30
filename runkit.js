@@ -1,6 +1,6 @@
 'use strict';
 
-const airPLS = require('ml-airPLS');
+const airPLS = require('ml-airpls');
 
 var a = new Array(10).fill(1);
 

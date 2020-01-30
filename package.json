@@ -15,25 +15,25 @@
     "prepublishOnly": "npm run compile",
     "eslint": "eslint src",
     "eslint-fix": "npm run eslint -- --fix",
-    "test": "run-s testonly eslint",
+    "test": "run-s test-only eslint",
     "test-travis": "eslint src && jest --coverage && codecov",
     "test-only": "jest"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/mljs/airPLS.git"
+    "url": "https://github.com/mljs/airpls.git"
   },
   "keywords": [
     "baseline",
     "correction"
   ],
-  "author": "Jose Alejandro Bolanos Arroyave",
+  "author": "Jose Alejandro Bolanos Arroyave (jobo322)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/mljs/airPLS/issues"
+    "url": "https://github.com/mljs/airpls/issues"
   },
   "runkitExampleFilename": "./runkit.js",
-  "homepage": "https://github.com/mljs/airPLS#readme",
+  "homepage": "https://github.com/mljs/airpls#readme",
   "jest": {
     "testEnvironment": "node"
   },

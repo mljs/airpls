@@ -1,4 +1,5 @@
 import cuthillMckee from 'cuthill-mckee';
+
 import Cholesky from './choleskySolver';
 
 /**
@@ -52,7 +53,7 @@ function airPLS(yData, options = {}) {
     let value = Math.exp(iteration * maxNegativeDiff / sumNegDifferences);
     weights[0] = value;
     weights[l] = value;
-    controlPoints.forEach(i => (weights[i] = value))
+    controlPoints.forEach((i) => (weights[i] = value));
   }
 
   return {
