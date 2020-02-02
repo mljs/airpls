@@ -21,8 +21,10 @@ It is an javascript implementation of [airpls](https://github.com/zmzhang/airPLS
 ```js
 const airpls = require('ml-airpls');
 
-var yData = [0,0,0,2,5,2,0,0];
-var {baseline, corrected, iteration, error} = airpls(yData);
+let y = [1, 1, 1, 1, 3, 6, 3, 1, 1, 1];
+let x = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+var {baseline, corrected, iteration, error} = airpls(x, y);
 ```
 
 ## License

@@ -1,21 +1,21 @@
 <!doctype html>
 <html>
 <head>
-  <meta charset='utf-8' />
-  <title>ml-airpls 0.0.2 | Documentation</title>
-  <meta name='viewport' content='width=device-width,initial-scale=1'>
-  <link href='assets/bass.css' type='text/css' rel='stylesheet' />
-  <link href='assets/style.css' type='text/css' rel='stylesheet' />
-  <link href='assets/github.css' type='text/css' rel='stylesheet' />
-  <link href='assets/split.css' type='text/css' rel='stylesheet' />
+  <meta charset='utf-8'>
+  <title>ml-airpls 0.1.0 | Documentation</title>
   <meta name='description' content='Baseline correction using adaptive iteratively reweighted penalized least'>
+  <meta name='viewport' content='width=device-width,initial-scale=1'>
+  <link href='assets/bass.css' rel='stylesheet'>
+  <link href='assets/style.css' rel='stylesheet'>
+  <link href='assets/github.css' rel='stylesheet'>
+  <link href='assets/split.css' rel='stylesheet'>
 </head>
 <body class='documentation m0'>
     <div class='flex'>
       <div id='split-left' class='overflow-auto fs0 height-viewport-100'>
         <div class='py1 px2'>
           <h3 class='mb0 no-anchor'>ml-airpls</h3>
-          <div class='mb1'><code>0.0.2</code></div>
+          <div class='mb1'><code>0.1.0</code></div>
           <input
             placeholder='Filter'
             id='filter-input'
@@ -37,7 +37,7 @@
             </ul>
           </div>
           <div class='mt1 h6 quiet'>
-            <a href='http://documentation.js.org/reading-documentation.html'>Need help reading this?</a>
+            <a href='https://documentation.js.org/reading-documentation.html'>Need help reading this?</a>
           </div>
         </div>
       </div>
@@ -54,7 +54,7 @@
     </h3>
     
     
-      <a class='fr fill-darken0 round round pad1x quiet h5' href='https://github.com/mljs/airPLS/blob/36aa7f4643ad220f44c7909cea594c9e980b3e4b/src/index.js#L16-L69'>
+      <a class='fr fill-darken0 round round pad1x quiet h5' href='https://github.com/mljs/airPLS/blob/2c24031e26d41ffcd9ce8786139ad3bbeeb983b4/src/index.js#L19-L100'>
       <span>src/index.js</span>
       </a>
     
@@ -64,10 +64,7 @@
   <p>Fit the baseline drift by iteratively changing weights of sum square error between the fitted baseline and original signals,
 for further information about the parameters you can get the <a href="https://github.com/zmzhang/airPLS/blob/master/airPLS_manuscript.pdf">paper of airPLS</a></p>
 
- 
-  
-    <div class='pre p1 fill-light mt0'>airPLS(yData: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>, options: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>): <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">array</a></div>
-   
+    <div class='pre p1 fill-light mt0'>airPLS(x: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>>, y: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>>, options: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>): {corrected: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>>, error: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, iteration: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, baseline: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>>}</div>
   
   
 
@@ -84,8 +81,17 @@ for further information about the parameters you can get the <a href="https://gi
       
         <div class='space-bottom0'>
           <div>
-            <span class='code bold'>yData</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>)</code>
-	    original data
+            <span class='code bold'>x</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>>)</code>
+	    x axis data useful when control points or zones are submitted
+
+          </div>
+          
+        </div>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>y</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>>)</code>
+	    Original data
 
           </div>
           
@@ -95,7 +101,7 @@ for further information about the parameters you can get the <a href="https://gi
           <div>
             <span class='code bold'>options</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>
             = <code>{}</code>)</code>
-	    options
+	    Options object
 
           </div>
           
@@ -117,7 +123,7 @@ for further information about the parameters you can get the <a href="https://gi
   
     (default <code>100</code>)
   </td>
-  <td class='break-word'><span>maximal number of iterations if the method does not reach the stop criterion
+  <td class='break-word'><span>Maximal number of iterations if the method does not reach the stop criterion
 </span></td>
 </tr>
 
@@ -128,18 +134,18 @@ for further information about the parameters you can get the <a href="https://gi
   
     (default <code>0.001</code>)
   </td>
-  <td class='break-word'><span>factor of the sum of absolute value of original data, to compute stop criterion
+  <td class='break-word'><span>Factor of the sum of absolute value of original data, to compute stop criterion
 </span></td>
 </tr>
 
 
               
                 <tr>
-  <td class='break-word'><span class='code bold'>options.weights</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a></code>
+  <td class='break-word'><span class='code bold'>options.weights</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>></code>
   
     (default <code>[1,1,...]</code>)
   </td>
-  <td class='break-word'><span>initial weights vector, default each point has the same weight
+  <td class='break-word'><span>Initial weights vector, default each point has the same weight
 </span></td>
 </tr>
 
@@ -150,9 +156,31 @@ for further information about the parameters you can get the <a href="https://gi
   
     (default <code>100</code>)
   </td>
-  <td class='break-word'><span>factor of weights matrix in -> 
+  <td class='break-word'><span>Factor of weights matrix in -> 
 [I + lambda D'D]
 z = x
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.controlPoints</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>></code>
+  
+    (default <code>[]</code>)
+  </td>
+  <td class='break-word'><span>Array of x axis values to force that baseline cross those points.
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.baseLineZones</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>></code>
+  
+    (default <code>[]</code>)
+  </td>
+  <td class='break-word'><span>Array of x axis values (as from - to), to force that baseline cross those zones.
 </span></td>
 </tr>
 
@@ -171,8 +199,8 @@ z = x
   
     
       <div class='py1 quiet mt1 prose-big'>Returns</div>
-      <code><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">array</a></code>:
-        list with baseline, corrected (original - baseline), iteration and error value.
+      <code>{corrected: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>>, error: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, iteration: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, baseline: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>>}</code>:
+        
 
       
     
@@ -187,8 +215,11 @@ z = x
   
 
   
+
+  
 </section>
 
+          
         
       </div>
     </div>

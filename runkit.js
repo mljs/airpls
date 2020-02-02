@@ -2,12 +2,9 @@
 
 const airPLS = require('ml-airpls');
 
-var a = new Array(10).fill(1);
+let y = [1, 1, 1, 1, 3, 6, 3, 1, 1, 1];
+let x = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
-for (let i = 2; i < 4; i++) {
-    a[i] += 5;
-}
-
-let result = airPLS(a, {maxIterations: 10, lambda: 100});
+let result = airPLS(x, y, {maxIterations: 10, lambda: 100});
 
 console.log(result.baseline);
