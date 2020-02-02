@@ -1,9 +1,11 @@
 import Cholesky from './choleskySolver';
+
 import { updateSystem, getDeltaMatrix, getCloseIndex } from './utils';
 
 /**
  * Fit the baseline drift by iteratively changing weights of sum square error between the fitted baseline and original signals,
  * for further information about the parameters you can get the [paper of airPLS](https://github.com/zmzhang/airPLS/blob/master/airPLS_manuscript.pdf)
+ * @param {Array} x - x axis data useful when there ise
  * @param {Array} y - original data
  * @param {object} [options={}] - options
  * @param {number} [options.maxIterations = 100] - maximal number of iterations if the method does not reach the stop criterion
@@ -14,8 +16,7 @@ import { updateSystem, getDeltaMatrix, getCloseIndex } from './utils';
  * @param {Array} [options.baseLineZones = []] - Array of x axis values (as from - to), to force that baseline cross those zones.
  * @returns {array} - list with baseline, corrected (original - baseline), iteration and error value.
  */
-function airPLS(data, options = {}) {
-  let { x, y } = data;
+function airPLS(x, y, options = {}) {
   let {
     maxIterations = 100,
     lambda = 100,
