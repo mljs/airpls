@@ -5,9 +5,9 @@ function ldlSymbolic(
   Lp /* output of size n + 1, not defined on input */,
   Parent /* output of size n, not defined on input */,
   Lnz /* output of size n, not defined on input */,
-  Flag /* workspace of size n, not defn. on input or output */
+  Flag /* workspace of size n, not defn. on input or output */,
 ) {
-  var i, k, p, kk, p2;
+  let i, k, p, kk, p2;
 
   for (k = 0; k < n; k++) {
     /* L(k,:) pattern: all nodes reachable in etree from nz in A(0:k-1,k) */
@@ -51,10 +51,10 @@ function ldlNumeric(
   D /* output of size n, not defined on input */,
   Y /* workspace of size n, not defn. on input or output */,
   Pattern /* workspace of size n, not defn. on input or output */,
-  Flag /* workspace of size n, not defn. on input or output */
+  Flag /* workspace of size n, not defn. on input or output */,
 ) {
-  var yi, lKi;
-  var i, k, p, kk, p2, len, top;
+  let yi, lKi;
+  let i, k, p, kk, p2, len, top;
   for (k = 0; k < n; k++) {
     /* compute nonzero Pattern of kth row of L, in topological order */
     Y[k] = 0.0; /* Y(0:k) is now all zero */
@@ -103,9 +103,9 @@ function ldlLsolve(
   X /* size n. right-hand-side on input, soln. on output */,
   Lp /* input of size n+1, not modified */,
   Li /* input of size lnz=Lp[n], not modified */,
-  Lx /* input of size lnz=Lp[n], not modified */
+  Lx /* input of size lnz=Lp[n], not modified */,
 ) {
-  var j, p, p2;
+  let j, p, p2;
   for (j = 0; j < n; j++) {
     p2 = Lp[j + 1];
     for (p = Lp[j]; p < p2; p++) {
@@ -116,9 +116,9 @@ function ldlLsolve(
 function ldlDsolve(
   n /* D is n-by-n, where n >= 0 */,
   X /* size n. right-hand-side on input, soln. on output */,
-  D /* input of size n, not modified */
+  D /* input of size n, not modified */,
 ) {
-  var j;
+  let j;
   for (j = 0; j < n; j++) {
     X[j] /= D[j];
   }
@@ -128,9 +128,9 @@ function ldlLTsolve(
   X /* size n. right-hand-side on input, soln. on output */,
   Lp /* input of size n+1, not modified */,
   Li /* input of size lnz=Lp[n], not modified */,
-  Lx /* input of size lnz=Lp[n], not modified */
+  Lx /* input of size lnz=Lp[n], not modified */,
 ) {
-  var j, p, p2;
+  let j, p, p2;
   for (j = n - 1; j >= 0; j--) {
     p2 = Lp[j + 1];
     for (p = Lp[j]; p < p2; p++) {
@@ -143,9 +143,9 @@ function ldlPerm(
   n /* size of X, B, and P */,
   X /* output of size n. */,
   B /* input of size n. */,
-  P /* input permutation array of size n. */
+  P /* input permutation array of size n. */,
 ) {
-  var j;
+  let j;
   for (j = 0; j < n; j++) {
     X[j] = B[P[j]];
   }
@@ -155,9 +155,9 @@ function ldlPermt(
   n /* size of X, B, and P */,
   X /* output of size n. */,
   B /* input of size n. */,
-  P /* input permutation array of size n. */
+  P /* input permutation array of size n. */,
 ) {
-  var j;
+  let j;
   for (j = 0; j < n; j++) {
     X[P[j]] = B[j];
   }
@@ -166,22 +166,22 @@ function ldlPermt(
 function prepare(M, n, P) {
   // if a permutation was specified, apply it.
   if (P) {
-    var Pinv = new Array(n);
+    let Pinv = new Array(n);
 
     for (let k = 0; k < n; k++) {
       Pinv[P[k]] = k;
     }
 
-    var Mt = []; // scratch memory
+    let Mt = []; // scratch memory
     // Apply permutation. We make M into P*M*P^T
     for (let a = 0; a < M.length; ++a) {
-      var ar = Pinv[M[a][0]];
-      var ac = Pinv[M[a][1]];
+      let ar = Pinv[M[a][0]];
+      let ac = Pinv[M[a][1]];
 
       // we only store the upper-diagonal elements(since we assume matrix is symmetric, we only need to store these)
       // if permuted element is below diagonal, we simply transpose it.
       if (ac < ar) {
-        var t = ac;
+        let t = ac;
         ac = ar;
         ar = t;
       }
@@ -203,12 +203,12 @@ function prepare(M, n, P) {
 
   // The sparse matrix we are decomposing is A.
   // Now we shall create A from M.
-  var Ap = new Array(n + 1);
-  var Ai = new Array(M.length);
-  var Ax = new Array(M.length);
+  let Ap = new Array(n + 1);
+  let Ai = new Array(M.length);
+  let Ax = new Array(M.length);
 
   // count number of non-zero elements in columns.
-  var LNZ = [];
+  let LNZ = [];
   for (let i = 0; i < n; ++i) {
     LNZ[i] = 0;
   }
@@ -221,43 +221,43 @@ function prepare(M, n, P) {
     Ap[i + 1] = Ap[i] + LNZ[i];
   }
 
-  var coloffset = [];
+  let coloffset = [];
   for (let a = 0; a < n; ++a) {
     coloffset[a] = 0;
   }
 
   // go through all elements in M, and add them to sparse matrix A.
   for (let i = 0; i < M.length; ++i) {
-    var e = M[i];
-    var col = e[1];
+    let e = M[i];
+    let col = e[1];
 
-    var adr = Ap[col] + coloffset[col];
+    let adr = Ap[col] + coloffset[col];
     Ai[adr] = e[0];
     Ax[adr] = e[2];
 
     coloffset[col]++;
   }
 
-  var D = new Array(n);
-  var Y = new Array(n);
-  var Lp = new Array(n + 1);
-  var Parent = new Array(n);
-  var Lnz = new Array(n);
-  var Flag = new Array(n);
-  var Pattern = new Array(n);
-  var bp1 = new Array(n);
-  var x = new Array(n);
-  var d;
+  let D = new Array(n);
+  let Y = new Array(n);
+  let Lp = new Array(n + 1);
+  let Parent = new Array(n);
+  let Lnz = new Array(n);
+  let Flag = new Array(n);
+  let Pattern = new Array(n);
+  let bp1 = new Array(n);
+  let x = new Array(n);
+  let d;
 
   ldlSymbolic(n, Ap, Ai, Lp, Parent, Lnz, Flag);
 
-  var Lx = new Array(Lp[n]);
-  var Li = new Array(Lp[n]);
+  let Lx = new Array(Lp[n]);
+  let Li = new Array(Lp[n]);
 
   d = ldlNumeric(n, Ap, Ai, Ax, Lp, Parent, Lnz, Li, Lx, D, Y, Pattern, Flag);
 
   if (d === n) {
-    return function (b) {
+    return function(b) {
       ldlPerm(n, bp1, b, P);
       ldlLsolve(n, bp1, Lp, Li, Lx);
       ldlDsolve(n, bp1, D);

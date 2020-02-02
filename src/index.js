@@ -1,20 +1,19 @@
 import Cholesky from './choleskySolver';
-
 import { updateSystem, getDeltaMatrix, getCloseIndex } from './utils';
 
 /**
  * Fit the baseline drift by iteratively changing weights of sum square error between the fitted baseline and original signals,
  * for further information about the parameters you can get the [paper of airPLS](https://github.com/zmzhang/airPLS/blob/master/airPLS_manuscript.pdf)
- * @param {Array} x - x axis data useful when there ise
- * @param {Array} y - original data
- * @param {object} [options={}] - options
- * @param {number} [options.maxIterations = 100] - maximal number of iterations if the method does not reach the stop criterion
- * @param {number} [options.factorCriterion = 0.001] - factor of the sum of absolute value of original data, to compute stop criterion
- * @param {Array} [options.weights = [1,1,...]] - initial weights vector, default each point has the same weight
- * @param {number} [options.lambda = 100] - factor of weights matrix in -> [I + lambda D'D]z = x
- * @param {Array} [options.controlPoints = []] - Array of x axis values to force that baseline cross those points.
- * @param {Array} [options.baseLineZones = []] - Array of x axis values (as from - to), to force that baseline cross those zones.
- * @returns {array} - list with baseline, corrected (original - baseline), iteration and error value.
+ * @param {Array<number>} x - x axis data useful when control points or zones are submitted
+ * @param {Array<number>} y - Original data
+ * @param {object} [options={}] - Options object
+ * @param {number} [options.maxIterations = 100] - Maximal number of iterations if the method does not reach the stop criterion
+ * @param {number} [options.factorCriterion = 0.001] - Factor of the sum of absolute value of original data, to compute stop criterion
+ * @param {Array<number>} [options.weights = [1,1,...]] - Initial weights vector, default each point has the same weight
+ * @param {number} [options.lambda = 100] - Factor of weights matrix in -> [I + lambda D'D]z = x
+ * @param {Array<number>} [options.controlPoints = []] - Array of x axis values to force that baseline cross those points.
+ * @param {Array<number>} [options.baseLineZones = []] - Array of x axis values (as from - to), to force that baseline cross those zones.
+ * @returns {{corrected: Array<number>, error: number, iteration: number, baseline: Array<number>}}
  */
 function airPLS(x, y, options = {}) {
   let {
@@ -23,7 +22,7 @@ function airPLS(x, y, options = {}) {
     factorCriterion = 0.001,
     weights = new Array(y.length).fill(1),
     controlPoints = [],
-    baseLineZones = []
+    baseLineZones = [],
   } = options;
 
   if (controlPoints.length > 0) {
@@ -39,37 +38,40 @@ function airPLS(x, y, options = {}) {
       }
     });
   }
-  var nbPoints = y.length;
-  var stopCriterion =
+
+  let baseline, iteration;
+  let nbPoints = y.length;
+  let l = nbPoints - 1;
+  let sumNegDifferences = Number.MAX_SAFE_INTEGER;
+  let stopCriterion =
     factorCriterion * y.reduce((sum, e) => Math.abs(e) + sum, 0);
 
-  var { lowerTriangularNonZeros, permutationEncodedArray } = getDeltaMatrix(
+  let { lowerTriangularNonZeros, permutationEncodedArray } = getDeltaMatrix(
     nbPoints,
-    lambda
+    lambda,
   );
 
-  var sumNegDifferences = Number.MAX_SAFE_INTEGER;
   for (
-    var iteration = 0;
+    iteration = 0;
     iteration < maxIterations && Math.abs(sumNegDifferences) > stopCriterion;
     iteration++
   ) {
     let [leftHandSide, rightHandSide] = updateSystem(
       lowerTriangularNonZeros,
       y,
-      weights
+      weights,
     );
 
     let cho = Cholesky(leftHandSide, nbPoints, permutationEncodedArray);
 
-    var baseline = cho(rightHandSide);
+    baseline = cho(rightHandSide);
 
     sumNegDifferences = 0;
 
     let difference = y.map(calculateError);
 
     let maxNegativeDiff = -1 * Number.MAX_SAFE_INTEGER;
-    for (var i = 1, l = nbPoints - 1; i < l; i++) {
+    for (let i = 1; i < l; i++) {
       let diff = difference[i];
       if (diff >= 0) {
         weights[i] = 0;
@@ -89,7 +91,7 @@ function airPLS(x, y, options = {}) {
     corrected: y.map((e, i) => e - baseline[i]),
     baseline,
     iteration,
-    error: sumNegDifferences
+    error: sumNegDifferences,
   };
 
   function calculateError(e, i) {

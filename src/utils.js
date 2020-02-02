@@ -14,9 +14,10 @@ const getCloseIndex = (array = [], goal = 0) => {
 
 const updateSystem = (matrix, y, weights) => {
   let nbPoints = y.length;
-  var newMatrix = new Array(matrix.length);
-  var newVector = new Float64Array(nbPoints);
-  for (var i = 0, l = nbPoints - 1; i < l; i++) {
+  let l = nbPoints - 1;
+  let newMatrix = new Array(matrix.length);
+  let newVector = new Float64Array(nbPoints);
+  for (let i = 0; i < l; i++) {
     let w = weights[i];
     let diag = i * 2;
     let next = diag + 1;
@@ -37,8 +38,9 @@ const updateSystem = (matrix, y, weights) => {
 };
 
 const getDeltaMatrix = (nbPoints, lambda) => {
-  var matrix = [];
-  for (var i = 0, last = nbPoints - 1; i < last; i++) {
+  let matrix = [];
+  let last = nbPoints - 1;
+  for (let i = 0; i < last; i++) {
     matrix.push([i, i, lambda * 2]);
     matrix.push([i + 1, i, -1 * lambda]);
   }
@@ -46,7 +48,7 @@ const getDeltaMatrix = (nbPoints, lambda) => {
   matrix.push([last, last, lambda]);
   return {
     lowerTriangularNonZeros: matrix,
-    permutationEncodedArray: cuthillMckee(matrix, nbPoints)
+    permutationEncodedArray: cuthillMckee(matrix, nbPoints),
   };
 };
 
