@@ -24,7 +24,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-
 function ldlSymbolic(
   n /* A and L are n-by-n, where n >= 0 */,
   Ap /* input of size n + 1, not modified */,
@@ -284,7 +283,7 @@ function prepare(M, n, P) {
   d = ldlNumeric(n, Ap, Ai, Ax, Lp, Parent, Lnz, Li, Lx, D, Y, Pattern, Flag);
 
   if (d === n) {
-    return function(b) {
+    return function (b) {
       ldlPerm(n, bp1, b, P);
       ldlLsolve(n, bp1, Lp, Li, Lx);
       ldlDsolve(n, bp1, D);
