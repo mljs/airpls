@@ -139,6 +139,7 @@ function ldlLsolve(
     }
   }
 }
+
 function ldlDsolve(
   n /* D is n-by-n, where n >= 0 */,
   X /* size n. right-hand-side on input, soln. on output */,
@@ -149,6 +150,7 @@ function ldlDsolve(
     X[j] /= D[j];
   }
 }
+
 function ldlLTsolve(
   n /* L is n-by-n, where n >= 0 */,
   X /* size n. right-hand-side on input, soln. on output */,
@@ -283,7 +285,7 @@ function prepare(M, n, P) {
   d = ldlNumeric(n, Ap, Ai, Ax, Lp, Parent, Lnz, Li, Lx, D, Y, Pattern, Flag);
 
   if (d === n) {
-    return function (b) {
+    return (b) => {
       ldlPerm(n, bp1, b, P);
       ldlLsolve(n, bp1, Lp, Li, Lx);
       ldlDsolve(n, bp1, D);
