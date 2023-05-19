@@ -1,4 +1,4 @@
-import Cholesky from './choleskySolver';
+import cholesky from './choleskySolver';
 import { updateSystem, getDeltaMatrix, getCloseIndex } from './utils';
 
 /**
@@ -15,7 +15,7 @@ import { updateSystem, getDeltaMatrix, getCloseIndex } from './utils';
  * @param {Array<number>} [options.baseLineZones = []] - Array of x axis values (as from - to), to force that baseline cross those zones.
  * @returns {{corrected: Array<number>, error: number, iteration: number, baseline: Array<number>}}
  */
-function airPLS(x, y, options = {}) {
+export default function airPLS(x, y, options = {}) {
   let {
     maxIterations = 100,
     lambda = 100,
@@ -62,7 +62,7 @@ function airPLS(x, y, options = {}) {
       weights,
     );
 
-    let cho = Cholesky(leftHandSide, nbPoints, permutationEncodedArray);
+    let cho = cholesky(leftHandSide, nbPoints, permutationEncodedArray);
 
     baseline = cho(rightHandSide);
 
@@ -100,5 +100,3 @@ function airPLS(x, y, options = {}) {
     return diff;
   }
 }
-
-export { airPLS as default };
