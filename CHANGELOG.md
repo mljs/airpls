@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/mljs/airpls/compare/v1.0.1...v1.0.2) (2023-05-22)
+
+
+### Bug Fixes
+
+* mjs extension in rollup config ([546ce6e](https://github.com/mljs/airpls/commit/546ce6ecc0733783f1eb2510214b101d053329d0))
+
 ## [1.0.1](https://github.com/mljs/airpls/compare/v1.0.0...v1.0.1) (2023-05-19)
 
 
