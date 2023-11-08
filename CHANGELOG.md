@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.3](https://github.com/mljs/airpls/compare/v1.0.2...v1.0.3) (2023-11-08)
+
+
+### Bug Fixes
+
+* rename factorCriterion to tolerance ([#11](https://github.com/mljs/airpls/issues/11)) ([3a93618](https://github.com/mljs/airpls/commit/3a93618df285043d4e0771ee7bb0100f80528c87))
+
 ## [1.0.2](https://github.com/mljs/airpls/compare/v1.0.1...v1.0.2) (2023-05-22)
 
 
