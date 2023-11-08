@@ -8,7 +8,7 @@ import { updateSystem, getDeltaMatrix, getCloseIndex } from './utils';
  * @param {Array<number>} y - Original data
  * @param {object} [options={}] - Options object
  * @param {number} [options.maxIterations = 100] - Maximal number of iterations if the method does not reach the stop criterion
- * @param {number} [options.factorCriterion = 0.001] - Factor of the sum of absolute value of original data, to compute stop criterion
+ * @param {number} [options.tolerance = 0.001] - Factor of the sum of absolute value of original data, to compute stop criterion
  * @param {Array<number>} [options.weights = [1,1,...]] - Initial weights vector, default each point has the same weight
  * @param {number} [options.lambda = 100] - Factor of weights matrix in -> [I + lambda D'D]z = x
  * @param {Array<number>} [options.controlPoints = []] - Array of x axis values to force that baseline cross those points.
@@ -19,7 +19,7 @@ export default function airPLS(x, y, options = {}) {
   let {
     maxIterations = 100,
     lambda = 100,
-    factorCriterion = 0.001,
+    tolerance = 0.001,
     weights = new Array(y.length).fill(1),
     controlPoints = [],
     baseLineZones = [],
@@ -43,8 +43,7 @@ export default function airPLS(x, y, options = {}) {
   let nbPoints = y.length;
   let l = nbPoints - 1;
   let sumNegDifferences = Number.MAX_SAFE_INTEGER;
-  let stopCriterion =
-    factorCriterion * y.reduce((sum, e) => Math.abs(e) + sum, 0);
+  let stopCriterion = tolerance * y.reduce((sum, e) => Math.abs(e) + sum, 0);
 
   let { lowerTriangularNonZeros, permutationEncodedArray } = getDeltaMatrix(
     nbPoints,
