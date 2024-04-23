@@ -1,3 +1,11 @@
+import {
+  xAbsolute,
+  xMean,
+  xMedian,
+  xNoiseSanPlot,
+  xStandardDeviation,
+} from 'ml-spectra-processing';
+
 import cholesky from './choleskySolver';
 import { updateSystem, getDeltaMatrix, getCloseIndex } from './utils';
 
@@ -12,33 +20,35 @@ import { updateSystem, getDeltaMatrix, getCloseIndex } from './utils';
  * @param {Array<number>} [options.weights = [1,1,...]] - Initial weights vector, default each point has the same weight
  * @param {number} [options.lambda = 100] - Factor of weights matrix in -> [I + lambda D'D]z = x
  * @param {Array<number>} [options.controlPoints = []] - Array of x axis values to force that baseline cross those points.
- * @param {Array<number>} [options.baseLineZones = []] - Array of x axis values (as from - to), to force that baseline cross those zones.
+ * @param {Array<number>} [options.zones = []] - Array of x axis values (as from - to), to force that baseline cross those zones.
  * @returns {{corrected: Array<number>, error: number, iteration: number, baseline: Array<number>}}
  */
 export default function airPLS(x, y, options = {}) {
   let {
     maxIterations = 100,
-    lambda = 100,
+    lambda = 10,
     tolerance = 0.001,
-    weights = new Array(y.length).fill(1),
+    weights = new Array(y.length).fill(0.8),
     controlPoints = [],
-    baseLineZones = [],
+    zones = [],
   } = options;
-
   if (controlPoints.length > 0) {
     controlPoints.forEach((e, i, arr) => (arr[i] = getCloseIndex(x, e)));
   }
-  if (baseLineZones.length > 0) {
-    baseLineZones.forEach((range) => {
-      let indexFrom = getCloseIndex(x, range.from);
-      let indexTo = getCloseIndex(x, range.to);
-      if (indexFrom > indexTo) [indexFrom, indexTo] = [indexTo, indexFrom];
-      for (let i = indexFrom; i < indexTo; i++) {
-        controlPoints.push(i);
-      }
-    });
-  }
+  // if (zones.length > 0) {
+  //   zones.forEach((range) => {
+  //     let indexFrom = getCloseIndex(x, range.from);
+  //     let indexTo = getCloseIndex(x, range.to);
+  //     if (indexFrom > indexTo) [indexFrom, indexTo] = [indexTo, indexFrom];
+  //     for (let i = indexFrom; i < indexTo; i++) {
+  //       controlPoints.push(i);
+  //     }
+  //   });
+  // }
 
+  for (const point of controlPoints) {
+    weights[point] = 2;
+  }
   let baseline, iteration;
   let nbPoints = y.length;
   let l = nbPoints - 1;
@@ -50,6 +60,8 @@ export default function airPLS(x, y, options = {}) {
     lambda,
   );
 
+  let threshold = 1;
+  let prevNegSum = Number.MAX_SAFE_INTEGER;
   for (
     iteration = 0;
     iteration < maxIterations && Math.abs(sumNegDifferences) > stopCriterion;
@@ -66,24 +78,56 @@ export default function airPLS(x, y, options = {}) {
     baseline = cho(rightHandSide);
 
     sumNegDifferences = 0;
-
     let difference = y.map(calculateError);
-
-    let maxNegativeDiff = -1 * Number.MAX_SAFE_INTEGER;
-    for (let i = 1; i < l; i++) {
-      let diff = difference[i];
-      if (diff >= 0) {
-        weights[i] = 0;
-      } else {
-        weights[i] = Math.exp((iteration * diff) / sumNegDifferences);
-        if (maxNegativeDiff < diff) maxNegativeDiff = diff;
+    if (iteration === 1) {
+      const { positive } = xNoiseSanPlot(difference);
+      threshold = positive;
+    } else {
+      const absChange = Math.abs(prevNegSum / sumNegDifferences);
+      if (absChange < 1.01 && absChange > 0.99) {
+        break;
       }
     }
+    console.log(
+      sumNegDifferences,
+      prevNegSum,
+      prevNegSum / sumNegDifferences,
+      stopCriterion,
+      iteration,
+    );
 
-    let value = Math.exp((iteration * maxNegativeDiff) / sumNegDifferences);
-    weights[0] = value;
-    weights[l] = value;
-    controlPoints.forEach((i) => (weights[i] = value));
+    prevNegSum = sumNegDifferences + 0;
+    let maxNegativeDiff = -1 * Number.MAX_SAFE_INTEGER;
+    console.log({ threshold });
+    for (let i = 1; i < l; i++) {
+      let diff = difference[i];
+
+      if (iteration < 100) {
+        if (Math.abs(diff) > threshold) {
+          weights[i] = 0;
+        } else {
+          const factor = diff > 0 ? -10 : 1;
+          weights[i] = Math.exp(
+            (factor * (iteration * diff)) / Math.abs(sumNegDifferences),
+          );
+        }
+      } else if (diff > 0) {
+        weights[i] = 0;
+      } else {
+        weights[i] = Math.exp((iteration * diff) / Math.abs(sumNegDifferences));
+      }
+
+      if (diff < 0 && maxNegativeDiff < diff) maxNegativeDiff = diff;
+    }
+
+    // let value = Math.exp(
+    //   (iteration * maxNegativeDiff) / Math.abs(sumNegDifferences),
+    // );
+    // weights[0] = 1;
+    // weights[l] = 1;
+    // for (const i of controlPoints) {
+    //   weights[i] = value;
+    // }
   }
 
   return {
