@@ -1,4 +1,10 @@
-import { xMultiply, xNoiseSanPlot } from 'ml-spectra-processing';
+import {
+  xAbsolute,
+  xMultiply,
+  xNoiseSanPlot,
+  xSubtract,
+  xSum,
+} from 'ml-spectra-processing';
 
 import cholesky from './choleskySolver';
 import { updateSystem, getDeltaMatrix, getCloseIndex } from './utils';
@@ -49,13 +55,15 @@ function getControlPoints(x, y, options = {}) {
  * @param {Array<number>} [options.zones = []] - Array of x axis values (as from - to), to force that baseline cross those zones.
  * @returns {{corrected: Array<number>, error: number, iteration: number, baseline: Array<number>}}
  */
+
 export default function airPLS(x, y, options = {}) {
   const { weights, controlPoints } = getControlPoints(x, y, options);
   let { maxIterations = 100, lambda = 10, tolerance = 0.001 } = options;
 
   let baseline, iteration;
   let sumNegDifferences = Number.MAX_SAFE_INTEGER;
-  let stopCriterion = tolerance * y.reduce((sum, e) => Math.abs(e) + sum, 0);
+  const corrected = Float64Array.from(y);
+  let stopCriterion = getStopCriterion(y, tolerance);
 
   const { length } = y;
   let { lowerTriangularNonZeros, permutationEncodedArray } = getDeltaMatrix(
@@ -71,6 +79,7 @@ export default function airPLS(x, y, options = {}) {
     iteration < maxIterations && Math.abs(sumNegDifferences) > stopCriterion;
     iteration++
   ) {
+    console.time('baseline');
     let [leftHandSide, rightHandSide] = updateSystem(
       lowerTriangularNonZeros,
       y,
@@ -81,10 +90,9 @@ export default function airPLS(x, y, options = {}) {
 
     baseline = cho(rightHandSide);
 
-    sumNegDifferences = 0;
-    let difference = y.map(calculateError);
+    sumNegDifferences = applyCorrection(y, baseline, corrected);
     if (iteration === 1) {
-      const { positive } = xNoiseSanPlot(difference);
+      const { positive } = xNoiseSanPlot(corrected);
       threshold = positive;
     } else {
       const absChange = Math.abs(prevNegSum / sumNegDifferences);
@@ -94,9 +102,8 @@ export default function airPLS(x, y, options = {}) {
     }
 
     prevNegSum = sumNegDifferences + 0;
-    let maxNegativeDiff = -1 * Number.MAX_SAFE_INTEGER;
     for (let i = 1; i < l; i++) {
-      let diff = difference[i];
+      const diff = corrected[i];
       if (controlPoints[i] < 1 && Math.abs(diff) > threshold) {
         weights[i] = 0;
       } else {
@@ -105,24 +112,40 @@ export default function airPLS(x, y, options = {}) {
           (factor * (iteration * diff)) / Math.abs(sumNegDifferences),
         );
       }
-
-      if (diff < 0 && maxNegativeDiff < diff) maxNegativeDiff = diff;
     }
 
     weights[0] = 1;
     weights[l] = 1;
+    console.timeEnd('baseline');
   }
 
   return {
-    corrected: y.map((e, i) => e - baseline[i]),
+    corrected,
     baseline,
     iteration,
     error: sumNegDifferences,
   };
 
-  function calculateError(e, i) {
-    let diff = e - baseline[i];
-    if (diff < 0) sumNegDifferences += diff;
-    return diff;
+  function applyCorrection(y, baseline, corrected) {
+    let sumNegDifferences = 0;
+    for (let i = 0; i < y.length; i++) {
+      let diff = y[i] - baseline[i];
+      if (diff < 0) sumNegDifferences += diff;
+      corrected[i] = diff;
+    }
+
+    return sumNegDifferences;
   }
+}
+
+function getStopCriterion(y, tolerance) {
+  let sum = y[0];
+  for (let i = 1; i < y.length; i++) {
+    if (y[i] < 0) {
+      sum -= y[i];
+    } else {
+      sum += y[i];
+    }
+  }
+  return tolerance * sum;
 }
