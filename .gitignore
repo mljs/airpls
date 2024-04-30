@@ -1,6 +1,7 @@
 node_modules
 .idea
 logs
+lib
 *.log
 npm-debug.log*
 coverage
