@@ -3,7 +3,7 @@ import { updateSystem, getDeltaMatrix, getCloseIndex } from './utils';
 
 /**
  * Fit the baseline drift by iteratively changing weights of sum square error between the fitted baseline and original signals,
- * for further information about the parameters you can get the [paper of airPLS](https://github.com/zmzhang/airPLS/blob/master/airPLS_manuscript.pdf)
+ * for further information about the parameters you can get the [paper of airPLS](https://github.com/zmzhang/airPLS/blob/main/airPLS_manuscript.pdf)
  * @param {Array<number>} x - x axis data useful when control points or zones are submitted
  * @param {Array<number>} y - Original data
  * @param {object} [options={}] - Options object

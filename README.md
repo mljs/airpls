@@ -6,7 +6,7 @@
 
 Baseline correction using adaptive iteratively reweighted penalized least squares
 
-It is an javascript implementation of [airpls](https://github.com/zmzhang/airPLS/blob/master/airPLS_manuscript.pdf) using cholesky decomposition and reverse Cuthill-Mckee method for reducing the bandwidth of sparse linear systems, obtaining a fast baseline fitter. 
+It is an javascript implementation of [airpls](https://github.com/zmzhang/airPLS/blob/main/airPLS_manuscript.pdf) using cholesky decomposition and reverse Cuthill-Mckee method for reducing the bandwidth of sparse linear systems, obtaining a fast baseline fitter. 
 
 ## Installation
 
