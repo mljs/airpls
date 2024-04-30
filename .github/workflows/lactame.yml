@@ -3,6 +3,7 @@ name: Deploy build on lactame.com
 on:
   release:
     types: [published]
+  workflow_dispatch:
 
 env:
   NODE_VERSION: 20.x
