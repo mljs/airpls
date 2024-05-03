@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.0.0](https://github.com/mljs/airpls/compare/v1.0.3...v2.0.0) (2024-05-03)
+
+
+### ⚠ BREAKING CHANGES
+
+* improve result by use the noise level after first iteration ([#13](https://github.com/mljs/airpls/issues/13))
+
+### Features
+
+* improve result by use the noise level after first iteration ([#13](https://github.com/mljs/airpls/issues/13)) ([49b48cc](https://github.com/mljs/airpls/commit/49b48ccc0f2f43093b89e7c51fcbf6162a1feba0))
+
 ## [1.0.3](https://github.com/mljs/airpls/compare/v1.0.2...v1.0.3) (2023-11-08)
 
 
