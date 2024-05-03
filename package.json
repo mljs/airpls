@@ -1,6 +1,6 @@
 {
   "name": "ml-airpls",
-  "version": "1.0.3",
+  "version": "2.0.0",
   "description": "Baseline correction using adaptive iteratively reweighted penalized least",
   "main": "lib/index.js",
   "types": "ml-airpls.d.ts",
