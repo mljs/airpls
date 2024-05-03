@@ -45,6 +45,6 @@
   },
   "dependencies": {
     "cuthill-mckee": "^1.0.0",
-    "ml-spectra-processing": "^14.3.0"
+    "ml-spectra-processing": "^14.5.0"
   }
 }

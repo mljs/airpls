@@ -1,10 +1,4 @@
-import {
-  xAbsolute,
-  xMultiply,
-  xNoiseSanPlot,
-  xSubtract,
-  xSum,
-} from 'ml-spectra-processing';
+import { xMultiply, xNoiseSanPlot, xAbsoluteSum } from 'ml-spectra-processing';
 
 import cholesky from './choleskySolver';
 import { updateSystem, getDeltaMatrix, getCloseIndex } from './utils';
@@ -79,7 +73,6 @@ export default function airPLS(x, y, options = {}) {
     iteration < maxIterations && Math.abs(sumNegDifferences) > stopCriterion;
     iteration++
   ) {
-    console.time('baseline');
     let [leftHandSide, rightHandSide] = updateSystem(
       lowerTriangularNonZeros,
       y,
@@ -116,7 +109,6 @@ export default function airPLS(x, y, options = {}) {
 
     weights[0] = 1;
     weights[l] = 1;
-    console.timeEnd('baseline');
   }
 
   return {
@@ -139,13 +131,6 @@ export default function airPLS(x, y, options = {}) {
 }
 
 function getStopCriterion(y, tolerance) {
-  let sum = y[0];
-  for (let i = 1; i < y.length; i++) {
-    if (y[i] < 0) {
-      sum -= y[i];
-    } else {
-      sum += y[i];
-    }
-  }
+  let sum = xAbsoluteSum(y);
   return tolerance * sum;
 }
