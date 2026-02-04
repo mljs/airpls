@@ -1,17 +1,5 @@
 import cuthillMckee from 'cuthill-mckee';
 
-const getClosestNumber = (array = [], goal = 0) => {
-  const closest = array.reduce((prev, curr) => {
-    return Math.abs(curr - goal) < Math.abs(prev - goal) ? curr : prev;
-  });
-  return closest;
-};
-
-const getCloseIndex = (array = [], goal = 0) => {
-  const closest = getClosestNumber(array, goal);
-  return array.indexOf(closest);
-};
-
 const updateSystem = (matrix, y, weights) => {
   let nbPoints = y.length;
   let l = nbPoints - 1;
@@ -52,4 +40,4 @@ const getDeltaMatrix = (nbPoints, lambda) => {
   };
 };
 
-export { updateSystem, getDeltaMatrix, getCloseIndex, getClosestNumber };
+export { updateSystem, getDeltaMatrix };

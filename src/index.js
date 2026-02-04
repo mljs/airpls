@@ -1,39 +1,12 @@
-import { xMultiply, xNoiseSanPlot, xAbsoluteSum } from 'ml-spectra-processing';
+import {
+  xMultiply,
+  xNoiseSanPlot,
+  xAbsoluteSum,
+  xFindClosestIndex,
+} from 'ml-spectra-processing';
 
 import cholesky from './choleskySolver';
-import { updateSystem, getDeltaMatrix, getCloseIndex } from './utils';
-
-function getControlPoints(x, y, options = {}) {
-  const { length } = x;
-  let { controlPoints = Int8Array.from({ length }).fill(0) } = options;
-  const { zones = [], weights = Float64Array.from({ length }).fill(1) } =
-    options;
-
-  if (x.length !== y.length) {
-    throw new RangeError('Y should match the length with X');
-  } else if (controlPoints.length !== x.length) {
-    throw new RangeError('controlPoints should match the length with X');
-  } else if (weights.length !== x.length) {
-    throw new RangeError('weights should match the length with X');
-  }
-
-  zones.forEach((range) => {
-    let indexFrom = getCloseIndex(x, range.from);
-    let indexTo = getCloseIndex(x, range.to);
-    if (indexFrom > indexTo) [indexFrom, indexTo] = [indexTo, indexFrom];
-    for (let i = indexFrom; i < indexTo; i++) {
-      controlPoints[i] = 1;
-    }
-  });
-
-  return {
-    weights:
-      'controlPoints' in options || zones.length > 0
-        ? xMultiply(weights, controlPoints)
-        : weights,
-    controlPoints,
-  };
-}
+import { updateSystem, getDeltaMatrix } from './utils';
 
 /**
  * Fit the baseline drift by iteratively changing weights of sum square error between the fitted baseline and original signals,
@@ -53,7 +26,6 @@ function getControlPoints(x, y, options = {}) {
 export default function airPLS(x, y, options = {}) {
   const { weights, controlPoints } = getControlPoints(x, y, options);
   let { maxIterations = 100, lambda = 10, tolerance = 0.001 } = options;
-
   let baseline, iteration;
   let sumNegDifferences = Number.MAX_SAFE_INTEGER;
   const corrected = Float64Array.from(y);
@@ -95,16 +67,13 @@ export default function airPLS(x, y, options = {}) {
     }
 
     prevNegSum = sumNegDifferences + 0;
+    const absoluteSumNegatives = Math.abs(sumNegDifferences);
+
     for (let i = 1; i < l; i++) {
-      const diff = corrected[i];
-      if (controlPoints[i] < 1 && Math.abs(diff) > threshold) {
-        weights[i] = 0;
-      } else {
-        const factor = diff > 0 ? -1 : 1;
-        weights[i] = Math.exp(
-          (factor * (iteration * diff)) / Math.abs(sumNegDifferences),
-        );
-      }
+      const absDiff = Math.abs(corrected[i]);
+      const weight = Math.exp((-iteration * absDiff) / absoluteSumNegatives);
+      weights[i] =
+        controlPoints[i] < 1 && absDiff > threshold ? weight / 4 : weight;
     }
 
     weights[0] = 1;
@@ -133,4 +102,36 @@ export default function airPLS(x, y, options = {}) {
 function getStopCriterion(y, tolerance) {
   let sum = xAbsoluteSum(y);
   return tolerance * sum;
+}
+
+function getControlPoints(x, y, options = {}) {
+  const { length } = x;
+  let { controlPoints = Int8Array.from({ length }).fill(0) } = options;
+  const { zones = [], weights = Float64Array.from({ length }).fill(0.5) } =
+    options;
+
+  if (x.length !== y.length) {
+    throw new RangeError('Y should match the length with X');
+  } else if (controlPoints.length !== x.length) {
+    throw new RangeError('controlPoints should match the length with X');
+  } else if (weights.length !== x.length) {
+    throw new RangeError('weights should match the length with X');
+  }
+
+  zones.forEach((range) => {
+    let indexFrom = xFindClosestIndex(x, range.from);
+    let indexTo = xFindClosestIndex(x, range.to);
+    if (indexFrom > indexTo) [indexFrom, indexTo] = [indexTo, indexFrom];
+    for (let i = indexFrom; i < indexTo; i++) {
+      controlPoints[i] = 1;
+    }
+  });
+
+  return {
+    weights:
+      'controlPoints' in options || zones.length > 0
+        ? xMultiply(weights, controlPoints)
+        : weights,
+    controlPoints,
+  };
 }
