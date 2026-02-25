@@ -25,14 +25,14 @@ THE SOFTWARE.
 */
 
 function ldlSymbolic(
-  n /* A and L are n-by-n, where n >= 0 */,
-  Ap /* input of size n + 1, not modified */,
-  Ai /* input of size nz=Ap[n], not modified */,
-  Lp /* output of size n + 1, not defined on input */,
-  Parent /* output of size n, not defined on input */,
-  Lnz /* output of size n, not defined on input */,
-  Flag /* workspace of size n, not defn. on input or output */,
-) {
+  n: number,
+  Ap: number[],
+  Ai: number[],
+  Lp: number[],
+  Parent: number[],
+  Lnz: number[],
+  Flag: number[],
+): void {
   let i, k, p, kk, p2;
 
   for (k = 0; k < n; k++) {
@@ -65,25 +65,25 @@ function ldlSymbolic(
 }
 
 function ldlNumeric(
-  n /* A and L are n-by-n, where n >= 0 */,
-  Ap /* input of size n+1, not modified */,
-  Ai /* input of size nz=Ap[n], not modified */,
-  Ax /* input of size nz=Ap[n], not modified */,
-  Lp /* input of size n+1, not modified */,
-  Parent /* input of size n, not modified */,
-  Lnz /* output of size n, not defn. on input */,
-  Li /* output of size lnz=Lp[n], not defined on input */,
-  Lx /* output of size lnz=Lp[n], not defined on input */,
-  D /* output of size n, not defined on input */,
-  Y /* workspace of size n, not defn. on input or output */,
-  Pattern /* workspace of size n, not defn. on input or output */,
-  Flag /* workspace of size n, not defn. on input or output */,
-) {
+  n: number,
+  Ap: number[],
+  Ai: number[],
+  Ax: number[],
+  Lp: number[],
+  Parent: number[],
+  Lnz: number[],
+  Li: number[],
+  Lx: number[],
+  D: number[],
+  Y: number[],
+  Pattern: number[],
+  Flag: number[],
+): number {
   let yi, lKi;
   let i, k, p, kk, p2, len, top;
   for (k = 0; k < n; k++) {
     /* compute nonzero Pattern of kth row of L, in topological order */
-    Y[k] = 0.0; /* Y(0:k) is now all zero */
+    Y[k] = 0; /* Y(0:k) is now all zero */
     top = n; /* stack for pattern is empty */
     Flag[k] = k; /* mark node k as visited */
     Lnz[k] = 0; /* count of nonzeros in column k of L */
@@ -102,11 +102,11 @@ function ldlNumeric(
     }
     /* compute numerical values kth row of L (a sparse triangular solve) */
     D[k] = Y[k]; /* get D(k,k) and clear Y(k) */
-    Y[k] = 0.0;
+    Y[k] = 0;
     for (; top < n; top++) {
       i = Pattern[top]; /* Pattern[top:n-1] is pattern of L(:,k) */
       yi = Y[i]; /* get and clear Y(i) */
-      Y[i] = 0.0;
+      Y[i] = 0;
       p2 = Lp[i] + Lnz[i];
       for (p = Lp[i]; p < p2; p++) {
         Y[Li[p]] -= Lx[p] * yi;
@@ -118,19 +118,19 @@ function ldlNumeric(
       Lnz[i]++; /* increment count of nonzeros in col i */
     }
 
-    if (D[k] === 0.0) return k; /* failure, D(k,k) is zero */
+    if (D[k] === 0) return k; /* failure, D(k,k) is zero */
   }
 
   return n; /* success, diagonal of D is all nonzero */
 }
 
 function ldlLsolve(
-  n /* L is n-by-n, where n >= 0 */,
-  X /* size n. right-hand-side on input, soln. on output */,
-  Lp /* input of size n+1, not modified */,
-  Li /* input of size lnz=Lp[n], not modified */,
-  Lx /* input of size lnz=Lp[n], not modified */,
-) {
+  n: number,
+  X: number[],
+  Lp: number[],
+  Li: number[],
+  Lx: number[],
+): void {
   let j, p, p2;
   for (j = 0; j < n; j++) {
     p2 = Lp[j + 1];
@@ -140,11 +140,7 @@ function ldlLsolve(
   }
 }
 
-function ldlDsolve(
-  n /* D is n-by-n, where n >= 0 */,
-  X /* size n. right-hand-side on input, soln. on output */,
-  D /* input of size n, not modified */,
-) {
+function ldlDsolve(n: number, X: number[], D: number[]): void {
   let j;
   for (j = 0; j < n; j++) {
     X[j] /= D[j];
@@ -152,12 +148,12 @@ function ldlDsolve(
 }
 
 function ldlLTsolve(
-  n /* L is n-by-n, where n >= 0 */,
-  X /* size n. right-hand-side on input, soln. on output */,
-  Lp /* input of size n+1, not modified */,
-  Li /* input of size lnz=Lp[n], not modified */,
-  Lx /* input of size lnz=Lp[n], not modified */,
-) {
+  n: number,
+  X: number[],
+  Lp: number[],
+  Li: number[],
+  Lx: number[],
+): void {
   let j, p, p2;
   for (j = n - 1; j >= 0; j--) {
     p2 = Lp[j + 1];
@@ -167,40 +163,41 @@ function ldlLTsolve(
   }
 }
 
-function ldlPerm(
-  n /* size of X, B, and P */,
-  X /* output of size n. */,
-  B /* input of size n. */,
-  P /* input permutation array of size n. */,
-) {
+function ldlPerm(n: number, X: number[], B: number[], P: number[]): void {
   let j;
   for (j = 0; j < n; j++) {
     X[j] = B[P[j]];
   }
 }
 
-function ldlPermt(
-  n /* size of X, B, and P */,
-  X /* output of size n. */,
-  B /* input of size n. */,
-  P /* input permutation array of size n. */,
-) {
+function ldlPermt(n: number, X: number[], B: number[], P: number[]): void {
   let j;
   for (j = 0; j < n; j++) {
     X[P[j]] = B[j];
   }
 }
 
-function prepare(M, n, P) {
+/**
+ * Prepares a sparse matrix for Cholesky decomposition and returns a solver function.
+ * @param M - Sparse matrix in triplet format (array of [row, col, value] entries).
+ * @param n - Size of the matrix (n-by-n).
+ * @param P - Optional permutation array of size n.
+ * @returns A solver function that takes a right-hand side vector and returns the solution, or null if decomposition fails.
+ */
+function prepare(
+  M: number[][],
+  n: number,
+  P?: number[],
+): ((b: number[]) => number[]) | null {
   // if a permutation was specified, apply it.
   if (P) {
-    let Pinv = new Array(n);
+    const Pinv = new Array<number>(n);
 
     for (let k = 0; k < n; k++) {
       Pinv[P[k]] = k;
     }
 
-    let Mt = []; // scratch memory
+    const Mt: number[][] = []; // scratch memory
     // Apply permutation. We make M into P*M*P^T
     for (let a = 0; a < M.length; ++a) {
       let ar = Pinv[M[a][0]];
@@ -209,7 +206,7 @@ function prepare(M, n, P) {
       // we only store the upper-diagonal elements(since we assume matrix is symmetric, we only need to store these)
       // if permuted element is below diagonal, we simply transpose it.
       if (ac < ar) {
-        let t = ac;
+        const t = ac;
         ac = ar;
         ar = t;
       }
@@ -231,17 +228,17 @@ function prepare(M, n, P) {
 
   // The sparse matrix we are decomposing is A.
   // Now we shall create A from M.
-  let Ap = new Array(n + 1);
-  let Ai = new Array(M.length);
-  let Ax = new Array(M.length);
+  const Ap = new Array<number>(n + 1);
+  const Ai = new Array<number>(M.length);
+  const Ax = new Array<number>(M.length);
 
   // count number of non-zero elements in columns.
-  let LNZ = [];
+  const LNZ: number[] = [];
   for (let i = 0; i < n; ++i) {
     LNZ[i] = 0;
   }
-  for (let a = 0; a < M.length; ++a) {
-    LNZ[M[a][1]]++;
+  for (const entry of M) {
+    LNZ[entry[1]]++;
   }
 
   Ap[0] = 0;
@@ -249,43 +246,55 @@ function prepare(M, n, P) {
     Ap[i + 1] = Ap[i] + LNZ[i];
   }
 
-  let coloffset = [];
+  const coloffset: number[] = [];
   for (let a = 0; a < n; ++a) {
     coloffset[a] = 0;
   }
 
   // go through all elements in M, and add them to sparse matrix A.
-  for (let i = 0; i < M.length; ++i) {
-    let e = M[i];
-    let col = e[1];
+  for (const e of M) {
+    const col = e[1];
 
-    let adr = Ap[col] + coloffset[col];
+    const adr = Ap[col] + coloffset[col];
     Ai[adr] = e[0];
     Ax[adr] = e[2];
 
     coloffset[col]++;
   }
 
-  let D = new Array(n);
-  let Y = new Array(n);
-  let Lp = new Array(n + 1);
-  let Parent = new Array(n);
-  let Lnz = new Array(n);
-  let Flag = new Array(n);
-  let Pattern = new Array(n);
-  let bp1 = new Array(n);
-  let x = new Array(n);
-  let d;
+  const D = new Array<number>(n);
+  const Y = new Array<number>(n);
+  const Lp = new Array<number>(n + 1);
+  const Parent = new Array<number>(n);
+  const Lnz = new Array<number>(n);
+  const Flag = new Array<number>(n);
+  const Pattern = new Array<number>(n);
+  const bp1 = new Array<number>(n);
+  const x = new Array<number>(n);
 
   ldlSymbolic(n, Ap, Ai, Lp, Parent, Lnz, Flag);
 
-  let Lx = new Array(Lp[n]);
-  let Li = new Array(Lp[n]);
+  const Lx = new Array<number>(Lp[n]);
+  const Li = new Array<number>(Lp[n]);
 
-  d = ldlNumeric(n, Ap, Ai, Ax, Lp, Parent, Lnz, Li, Lx, D, Y, Pattern, Flag);
+  const d = ldlNumeric(
+    n,
+    Ap,
+    Ai,
+    Ax,
+    Lp,
+    Parent,
+    Lnz,
+    Li,
+    Lx,
+    D,
+    Y,
+    Pattern,
+    Flag,
+  );
 
   if (d === n) {
-    return (b) => {
+    return (b: number[]): number[] => {
       ldlPerm(n, bp1, b, P);
       ldlLsolve(n, bp1, Lp, Li, Lx);
       ldlDsolve(n, bp1, D);
@@ -299,4 +308,4 @@ function prepare(M, n, P) {
   }
 }
 
-export { prepare as default };
+export default prepare;
