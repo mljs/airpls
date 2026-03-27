@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0](https://github.com/mljs/airpls/compare/v2.0.0...v2.1.0) (2026-03-27)
+
+
+### Features
+
+* add weight adjustment for signal zones in airPLS algorithm ([#15](https://github.com/mljs/airpls/issues/15)) ([0c3d65c](https://github.com/mljs/airpls/commit/0c3d65c8ee94ca8dd92da439cefaa75d02ecc024))
+
 ## [2.0.0](https://github.com/mljs/airpls/compare/v1.0.3...v2.0.0) (2024-05-03)
 
 
