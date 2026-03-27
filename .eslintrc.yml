@@ -1,6 +1,0 @@
-extends: cheminfo
-env:
-  jest: true
-  node: true
-parserOptions:
-  sourceType: module
