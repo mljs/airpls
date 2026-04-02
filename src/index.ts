@@ -1,4 +1,4 @@
-import type { DoubleArray } from 'cheminfo-types';
+import type { DoubleArray, NumberArray } from 'cheminfo-types';
 import {
   xAbsoluteSum,
   xFindClosestIndex,
@@ -26,9 +26,9 @@ export interface AirPLSOptions {
    */
   tolerance?: number;
   /** Initial weights vector, default each point has the same weight. */
-  weights?: Float64Array;
+  weights?: NumberArray;
   /** Array of 0|1 to force the baseline to cross those points. */
-  controlPoints?: Int8Array;
+  controlPoints?: NumberArray;
   /** Array of x axis ranges (as from - to), to force the baseline to cross those zones. */
   zones?: Array<{ from: number; to: number }>;
 }
@@ -81,7 +81,7 @@ export default function airPLS(
   ) {
     const [leftHandSide, rightHandSide] = updateSystem(
       lowerTriangularNonZeros,
-      y as Float64Array,
+      y,
       weights,
     );
 
@@ -90,7 +90,7 @@ export default function airPLS(
       throw new Error('Cholesky decomposition failed');
     }
 
-    baseline = cho(rightHandSide as unknown as number[]);
+    baseline = cho(rightHandSide);
 
     sumNegDifferences = applyCorrection(y, baseline, corrected);
     if (iteration === 1) {
@@ -149,7 +149,7 @@ function getControlPoints(
   x: DoubleArray,
   y: DoubleArray,
   options: AirPLSOptions = {},
-): { weights: Float64Array; controlPoints: Int8Array } {
+): { weights: NumberArray; controlPoints: NumberArray } {
   const { length } = x;
   const { controlPoints = Int8Array.from({ length }).fill(0) } = options;
   const { zones = [], weights = Float64Array.from({ length }).fill(0.5) } =

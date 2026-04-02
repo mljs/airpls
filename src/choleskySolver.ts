@@ -24,6 +24,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+import type { NumberArray } from 'cheminfo-types';
+
 function ldlSymbolic(
   n: number,
   Ap: number[],
@@ -163,7 +165,7 @@ function ldlLTsolve(
   }
 }
 
-function ldlPerm(n: number, X: number[], B: number[], P: number[]): void {
+function ldlPerm(n: number, X: number[], B: NumberArray, P: number[]): void {
   let j;
   for (j = 0; j < n; j++) {
     X[j] = B[P[j]];
@@ -188,7 +190,7 @@ function prepare(
   M: number[][],
   n: number,
   P?: number[],
-): ((b: number[]) => number[]) | null {
+): ((b: NumberArray) => number[]) | null {
   // if a permutation was specified, apply it.
   if (P) {
     const Pinv = new Array<number>(n);
@@ -294,7 +296,7 @@ function prepare(
   );
 
   if (d === n) {
-    return (b: number[]): number[] => {
+    return (b: NumberArray): number[] => {
       ldlPerm(n, bp1, b, P);
       ldlLsolve(n, bp1, Lp, Li, Lx);
       ldlDsolve(n, bp1, D);

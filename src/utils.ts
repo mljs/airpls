@@ -1,3 +1,4 @@
+import type { NumberArray } from 'cheminfo-types';
 import cuthillMckee from 'cuthill-mckee';
 
 /**
@@ -9,8 +10,8 @@ import cuthillMckee from 'cuthill-mckee';
  */
 export function updateSystem(
   matrix: number[][],
-  y: Float64Array,
-  weights: Float64Array,
+  y: NumberArray,
+  weights: NumberArray,
 ): [number[][], Float64Array] {
   const nbPoints = y.length;
   const l = nbPoints - 1;
