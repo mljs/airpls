@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.1](https://github.com/mljs/airpls/compare/v2.1.0...v2.1.1) (2026-04-02)
+
+
+### Bug Fixes
+
+* correct types ([51b4950](https://github.com/mljs/airpls/commit/51b49502b6f20a4925a8591cc4f47d1d4cf807c6))
+
 ## [2.1.0](https://github.com/mljs/airpls/compare/v2.0.0...v2.1.0) (2026-03-27)
 
 
