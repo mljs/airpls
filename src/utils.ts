@@ -1,5 +1,5 @@
 import type { NumberArray } from 'cheminfo-types';
-import cuthillMckee from 'cuthill-mckee';
+import { matrixCuthillMckee } from 'ml-spectra-processing';
 
 /**
  * Updates the system matrix with new weights and computes the weighted right-hand side vector.
@@ -48,7 +48,7 @@ export function getDeltaMatrix(
   lambda: number,
 ): {
   lowerTriangularNonZeros: number[][];
-  permutationEncodedArray: number[];
+  permutationEncodedArray: Float64Array;
 } {
   const matrix: number[][] = [];
   const last = nbPoints - 1;
@@ -59,6 +59,6 @@ export function getDeltaMatrix(
   matrix.push([last, last, lambda]);
   return {
     lowerTriangularNonZeros: matrix,
-    permutationEncodedArray: cuthillMckee(matrix, nbPoints),
+    permutationEncodedArray: matrixCuthillMckee(matrix, nbPoints),
   };
 }

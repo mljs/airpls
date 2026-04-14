@@ -1,11 +1,13 @@
 import type { DoubleArray, NumberArray } from 'cheminfo-types';
 import {
+  matrixCholeskySolver,
   xAbsoluteSum,
   xFindClosestIndex,
   xNoiseSanPlot,
+  xSubtract,
+  xyInterpolateLinear,
 } from 'ml-spectra-processing';
 
-import cholesky from './choleskySolver.ts';
 import { getDeltaMatrix, updateSystem } from './utils.ts';
 
 export interface AirPLSOptions {
@@ -45,9 +47,9 @@ export interface AirPLSOptions {
 
 export interface AirPLSResult {
   /** The baseline-corrected data. */
-  corrected: Float64Array;
+  corrected: NumberArray;
   /** The estimated baseline. */
-  baseline: number[];
+  baseline: NumberArray;
   /** The number of iterations performed. */
   iteration: number;
   /** The sum of negative differences (error). */
@@ -106,7 +108,7 @@ export default function airPLS(
     optionsWork,
   );
   const { maxIterations = 100, lambda = 10, tolerance = 0.001 } = options;
-  let baseline: number[] = [];
+  let baseline: NumberArray = [];
   let iteration: number;
   let sumNegDifferences = Number.MAX_SAFE_INTEGER;
   const corrected = Float64Array.from(yWork);
@@ -132,7 +134,11 @@ export default function airPLS(
       weights,
     );
 
-    const cho = cholesky(leftHandSide, length, permutationEncodedArray);
+    const cho = matrixCholeskySolver(
+      leftHandSide,
+      length,
+      permutationEncodedArray,
+    );
     if (cho === null) {
       throw new Error('Cholesky decomposition failed');
     }
@@ -173,10 +179,8 @@ export default function airPLS(
   let finalCorrected = corrected;
 
   if (shouldDownsample) {
-    finalBaseline = interpolateLinear(xWork, baseline, x);
-    finalCorrected = Float64Array.from(
-      y.map((val, i) => val - finalBaseline[i]),
-    );
+    finalBaseline = xyInterpolateLinear({ x: xWork, y: baseline }, x);
+    finalCorrected = xSubtract(y, finalBaseline);
   }
 
   return {
@@ -188,8 +192,8 @@ export default function airPLS(
 }
 
 function applyCorrection(
-  y: DoubleArray,
-  baseline: number[],
+  y: NumberArray,
+  baseline: NumberArray,
   corrected: Float64Array,
 ): number {
   let sumNegDifferences = 0;
@@ -288,60 +292,4 @@ function decimateIndices(arr: DoubleArray, factor: number): Float64Array {
     result.push(arr[i]);
   }
   return Float64Array.from(result);
-}
-
-/**
- * Interpolate values using linear interpolation.
- * @param xSparse - Sparse x-axis values (downsampled).
- * @param ySparse - Sparse y values (downsampled).
- * @param xTarget - Target x-axis values (original resolution).
- * @returns Interpolated y values.
- */
-function interpolateLinear(
-  xSparse: DoubleArray,
-  ySparse: DoubleArray,
-  xTarget: DoubleArray,
-): number[] {
-  const result = new Array(xTarget.length);
-
-  for (let i = 0; i < xTarget.length; i++) {
-    const targetX = xTarget[i];
-
-    // Find surrounding points using binary search
-    let left = 0;
-    let right = xSparse.length - 1;
-
-    while (left < right) {
-      const mid = Math.floor((left + right) / 2);
-      if (xSparse[mid] < targetX) {
-        left = mid + 1;
-      } else {
-        right = mid;
-      }
-    }
-
-    // Handle boundary cases
-    if (left === 0) {
-      if (xSparse[0] === targetX) {
-        result[i] = ySparse[0];
-      } else if (xSparse.length === 1) {
-        result[i] = ySparse[0];
-      } else {
-        // Linear interpolation between first two points
-        const t = (targetX - xSparse[0]) / (xSparse[1] - xSparse[0]);
-        result[i] = ySparse[0] * (1 - t) + ySparse[1] * t;
-      }
-    } else if (left >= xSparse.length - 1) {
-      result[i] = ySparse[xSparse.length - 1];
-    } else {
-      // Linear interpolation between two surrounding points
-      const leftIdx = left - 1;
-      const rightIdx = left;
-      const t =
-        (targetX - xSparse[leftIdx]) / (xSparse[rightIdx] - xSparse[leftIdx]);
-      result[i] = ySparse[leftIdx] * (1 - t) + ySparse[rightIdx] * t;
-    }
-  }
-
-  return result;
 }
