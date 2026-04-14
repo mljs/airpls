@@ -2,7 +2,6 @@ import type { DoubleArray, NumberArray } from 'cheminfo-types';
 import {
   xAbsoluteSum,
   xFindClosestIndex,
-  xMultiply,
   xNoiseSanPlot,
 } from 'ml-spectra-processing';
 
@@ -31,6 +30,17 @@ export interface AirPLSOptions {
   controlPoints?: NumberArray;
   /** Array of x axis ranges (as from - to), to force the baseline to cross those zones. */
   zones?: Array<{ from: number; to: number }>;
+  /**
+   * Enable automatic downsampling for large datasets to speed up computation.
+   * @default false
+   */
+  autoDownsample?: boolean;
+  /**
+   * Maximum resolution (number of points) before downsampling is applied.
+   * Only used if autoDownsample is true.
+   * @default 5000
+   */
+  maxResolution?: number;
 }
 
 export interface AirPLSResult {
@@ -57,15 +67,52 @@ export default function airPLS(
   y: DoubleArray,
   options: AirPLSOptions = {},
 ): AirPLSResult {
-  const { weights, controlPoints } = getControlPoints(x, y, options);
+  const { autoDownsample = true, maxResolution = 5000 } = options;
+
+  // Check if downsampling should be applied
+  const shouldDownsample = autoDownsample && y.length > maxResolution;
+  let xWork = x;
+  let yWork = y;
+  let downsampleFactor = 1;
+  let optionsWork = options;
+
+  if (shouldDownsample) {
+    downsampleFactor = getDownsampleFactor(y.length, maxResolution);
+    yWork = averagePool(y, downsampleFactor);
+    xWork = decimateIndices(x, downsampleFactor);
+
+    // Downsample controlPoints if provided, to match downsampled x and y
+    if (options.controlPoints) {
+      const { controlPoints } = options;
+
+      const downsampledControlPoints = new Int8Array(xWork.length);
+      for (let i = 0; i < x.length; i++) {
+        if (controlPoints[i] > 0) {
+          const closestIndex = xFindClosestIndex(xWork, x[i]);
+          downsampledControlPoints[closestIndex] = 1;
+        }
+      }
+
+      optionsWork = {
+        ...options,
+        controlPoints: downsampledControlPoints,
+      };
+    }
+  }
+
+  const { weights, controlPoints } = getControlPoints(
+    xWork,
+    yWork,
+    optionsWork,
+  );
   const { maxIterations = 100, lambda = 10, tolerance = 0.001 } = options;
   let baseline: number[] = [];
   let iteration: number;
   let sumNegDifferences = Number.MAX_SAFE_INTEGER;
-  const corrected = Float64Array.from(y);
-  const stopCriterion = getStopCriterion(y, tolerance);
+  const corrected = Float64Array.from(yWork);
+  const stopCriterion = getStopCriterion(yWork, tolerance);
 
-  const { length } = y;
+  const { length } = yWork;
   const { lowerTriangularNonZeros, permutationEncodedArray } = getDeltaMatrix(
     length,
     lambda,
@@ -81,7 +128,7 @@ export default function airPLS(
   ) {
     const [leftHandSide, rightHandSide] = updateSystem(
       lowerTriangularNonZeros,
-      y,
+      yWork,
       weights,
     );
 
@@ -92,7 +139,7 @@ export default function airPLS(
 
     baseline = cho(rightHandSide);
 
-    sumNegDifferences = applyCorrection(y, baseline, corrected);
+    sumNegDifferences = applyCorrection(yWork, baseline, corrected);
     if (iteration === 1) {
       const { positive } = xNoiseSanPlot(corrected);
       threshold = positive;
@@ -104,22 +151,37 @@ export default function airPLS(
     }
 
     prevNegSum = sumNegDifferences + 0;
-    const absoluteSumNegatives = Math.abs(sumNegDifferences);
 
     for (let i = 1; i < l; i++) {
-      const absDiff = Math.abs(corrected[i]);
-      const weight = Math.exp((-iteration * absDiff) / absoluteSumNegatives);
-      weights[i] =
-        controlPoints[i] < 1 && absDiff > threshold ? weight / 4 : weight;
+      const diff = corrected[i];
+      if (controlPoints[i] < 1 && Math.abs(diff) > threshold) {
+        weights[i] = 0;
+      } else {
+        const factor = diff > 0 ? -1 : 1;
+        weights[i] = Math.exp(
+          (factor * (iteration * diff)) / Math.abs(sumNegDifferences),
+        );
+      }
     }
 
     weights[0] = 1;
     weights[l] = 1;
   }
 
+  // Interpolate results back to original resolution if downsampling was applied
+  let finalBaseline = baseline;
+  let finalCorrected = corrected;
+
+  if (shouldDownsample) {
+    finalBaseline = interpolateLinear(xWork, baseline, x);
+    finalCorrected = Float64Array.from(
+      y.map((val, i) => val - finalBaseline[i]),
+    );
+  }
+
   return {
-    corrected,
-    baseline,
+    corrected: finalCorrected,
+    baseline: finalBaseline,
     iteration,
     error: sumNegDifferences,
   };
@@ -152,7 +214,7 @@ function getControlPoints(
 ): { weights: NumberArray; controlPoints: NumberArray } {
   const { length } = x;
   const { controlPoints = Int8Array.from({ length }).fill(0) } = options;
-  const { zones = [], weights = Float64Array.from({ length }).fill(0.5) } =
+  const { zones = [], weights = Float64Array.from({ length }).fill(1) } =
     options;
 
   if (x.length !== y.length) {
@@ -173,10 +235,113 @@ function getControlPoints(
   }
 
   return {
-    weights:
-      'controlPoints' in options || zones.length > 0
-        ? xMultiply(weights, controlPoints)
-        : weights,
+    weights,
     controlPoints,
   };
+}
+
+/**
+ * Calculate the downsampling factor to reduce data to target resolution.
+ * @param originalLength - Original data length.
+ * @param targetResolution - Target number of points.
+ * @returns Downsampling factor.
+ */
+function getDownsampleFactor(
+  originalLength: number,
+  targetResolution: number,
+): number {
+  return Math.max(1, Math.ceil(originalLength / targetResolution));
+}
+
+/**
+ * Downsample by averaging consecutive points (average pooling).
+ * @param arr - Input array.
+ * @param poolSize - Number of consecutive points to average.
+ * @returns Downsampled array.
+ */
+function averagePool(arr: DoubleArray, poolSize: number): Float64Array {
+  if (poolSize <= 1) return Float64Array.from(arr);
+
+  const result: number[] = [];
+  for (let i = 0; i < arr.length; i += poolSize) {
+    let sum = 0;
+    const endIdx = Math.min(i + poolSize, arr.length);
+    for (let j = i; j < endIdx; j++) {
+      sum += arr[j];
+    }
+    result.push(sum / (endIdx - i));
+  }
+  return Float64Array.from(result);
+}
+
+/**
+ * Downsample by keeping every N-th index (decimation for x-axis).
+ * @param arr - Input x-axis array.
+ * @param factor - Decimation factor.
+ * @returns Decimated array.
+ */
+function decimateIndices(arr: DoubleArray, factor: number): Float64Array {
+  if (factor <= 1) return Float64Array.from(arr);
+
+  const result: number[] = [];
+  for (let i = 0; i < arr.length; i += factor) {
+    result.push(arr[i]);
+  }
+  return Float64Array.from(result);
+}
+
+/**
+ * Interpolate values using linear interpolation.
+ * @param xSparse - Sparse x-axis values (downsampled).
+ * @param ySparse - Sparse y values (downsampled).
+ * @param xTarget - Target x-axis values (original resolution).
+ * @returns Interpolated y values.
+ */
+function interpolateLinear(
+  xSparse: DoubleArray,
+  ySparse: DoubleArray,
+  xTarget: DoubleArray,
+): number[] {
+  const result = new Array(xTarget.length);
+
+  for (let i = 0; i < xTarget.length; i++) {
+    const targetX = xTarget[i];
+
+    // Find surrounding points using binary search
+    let left = 0;
+    let right = xSparse.length - 1;
+
+    while (left < right) {
+      const mid = Math.floor((left + right) / 2);
+      if (xSparse[mid] < targetX) {
+        left = mid + 1;
+      } else {
+        right = mid;
+      }
+    }
+
+    // Handle boundary cases
+    if (left === 0) {
+      if (xSparse[0] === targetX) {
+        result[i] = ySparse[0];
+      } else if (xSparse.length === 1) {
+        result[i] = ySparse[0];
+      } else {
+        // Linear interpolation between first two points
+        const t = (targetX - xSparse[0]) / (xSparse[1] - xSparse[0]);
+        result[i] = ySparse[0] * (1 - t) + ySparse[1] * t;
+      }
+    } else if (left >= xSparse.length - 1) {
+      result[i] = ySparse[xSparse.length - 1];
+    } else {
+      // Linear interpolation between two surrounding points
+      const leftIdx = left - 1;
+      const rightIdx = left;
+      const t =
+        (targetX - xSparse[leftIdx]) / (xSparse[rightIdx] - xSparse[leftIdx]);
+      result[i] = ySparse[leftIdx] * (1 - t) + ySparse[rightIdx] * t;
+    }
+  }
+
+  return result;
 }
