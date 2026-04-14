@@ -63,6 +63,7 @@ test('cosine baseline correction with negative peak', () => {
   const result = airPLS(spectrum.x, withBaseline, {
     controlPoints,
     maxIterations: 10,
+    autoDownsample: false,
     lambda: 50,
     tolerance: 0.01,
   });

@@ -2,6 +2,7 @@ import type { DoubleArray, NumberArray } from 'cheminfo-types';
 import {
   matrixCholeskySolver,
   xAbsoluteSum,
+  xBinning,
   xFindClosestIndex,
   xNoiseSanPlot,
   xSubtract,
@@ -69,45 +70,17 @@ export default function airPLS(
   y: DoubleArray,
   options: AirPLSOptions = {},
 ): AirPLSResult {
-  const { autoDownsample = true, maxResolution = 5000 } = options;
-
-  // Check if downsampling should be applied
-  const shouldDownsample = autoDownsample && y.length > maxResolution;
-  let xWork = x;
-  let yWork = y;
-  let downsampleFactor = 1;
-  let optionsWork = options;
-
-  if (shouldDownsample) {
-    downsampleFactor = getDownsampleFactor(y.length, maxResolution);
-    yWork = averagePool(y, downsampleFactor);
-    xWork = decimateIndices(x, downsampleFactor);
-
-    // Downsample controlPoints if provided, to match downsampled x and y
-    if (options.controlPoints) {
-      const { controlPoints } = options;
-
-      const downsampledControlPoints = new Int8Array(xWork.length);
-      for (let i = 0; i < x.length; i++) {
-        if (controlPoints[i] > 0) {
-          const closestIndex = xFindClosestIndex(xWork, x[i]);
-          downsampledControlPoints[closestIndex] = 1;
-        }
-      }
-
-      optionsWork = {
-        ...options,
-        controlPoints: downsampledControlPoints,
-      };
-    }
-  }
-
+  const { xWork, yWork, optionsWork, shouldDownsample } = getDownSampleData(
+    x,
+    y,
+    options,
+  );
   const { weights, controlPoints } = getControlPoints(
     xWork,
     yWork,
     optionsWork,
   );
-  const { maxIterations = 100, lambda = 10, tolerance = 0.001 } = options;
+  const { maxIterations = 100, lambda = 10, tolerance = 0.001 } = optionsWork;
   let baseline: NumberArray = [];
   let iteration: number;
   let sumNegDifferences = Number.MAX_SAFE_INTEGER;
@@ -206,6 +179,47 @@ function applyCorrection(
   return sumNegDifferences;
 }
 
+function getDownSampleData(
+  x: DoubleArray,
+  y: DoubleArray,
+  options: AirPLSOptions = {},
+) {
+  const {
+    autoDownsample = true,
+    maxResolution = 5000,
+    controlPoints,
+  } = options;
+
+  const shouldDownsample = autoDownsample && y.length > maxResolution;
+
+  if (!shouldDownsample) {
+    return { xWork: x, yWork: y, optionsWork: options, shouldDownsample };
+  }
+
+  const downsampleFactor = getDownsampleFactor(y.length, maxResolution);
+  const yWork = xBinning(y, downsampleFactor);
+  const xWork = decimateIndices(x, downsampleFactor);
+  let optionsWork = options;
+
+  // Downsample controlPoints if provided, to match downsampled x and y
+  if (controlPoints) {
+    const downsampledControlPoints = new Int8Array(xWork.length);
+    for (let i = 0; i < x.length; i++) {
+      if (controlPoints[i] > 0) {
+        const closestIndex = xFindClosestIndex(xWork, x[i]);
+        downsampledControlPoints[closestIndex] = 1;
+      }
+    }
+
+    optionsWork = {
+      ...options,
+      controlPoints: downsampledControlPoints,
+    };
+  }
+
+  return { xWork, yWork, optionsWork, shouldDownsample };
+}
+
 function getStopCriterion(y: DoubleArray, tolerance: number): number {
   const sum = xAbsoluteSum(y);
   return tolerance * sum;
@@ -258,27 +272,6 @@ function getDownsampleFactor(
 }
 
 /**
- * Downsample by averaging consecutive points (average pooling).
- * @param arr - Input array.
- * @param poolSize - Number of consecutive points to average.
- * @returns Downsampled array.
- */
-function averagePool(arr: DoubleArray, poolSize: number): Float64Array {
-  if (poolSize <= 1) return Float64Array.from(arr);
-
-  const result: number[] = [];
-  for (let i = 0; i < arr.length; i += poolSize) {
-    let sum = 0;
-    const endIdx = Math.min(i + poolSize, arr.length);
-    for (let j = i; j < endIdx; j++) {
-      sum += arr[j];
-    }
-    result.push(sum / (endIdx - i));
-  }
-  return Float64Array.from(result);
-}
-
-/**
  * Downsample by keeping every N-th index (decimation for x-axis).
  * @param arr - Input x-axis array.
  * @param factor - Decimation factor.
@@ -291,5 +284,6 @@ function decimateIndices(arr: DoubleArray, factor: number): Float64Array {
   for (let i = 0; i < arr.length; i += factor) {
     result.push(arr[i]);
   }
+
   return Float64Array.from(result);
 }
