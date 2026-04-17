@@ -75,6 +75,7 @@ export default function airPLS(
     y,
     options,
   );
+
   const { weights, controlPoints } = getControlPoints(
     xWork,
     yWork,
@@ -117,7 +118,6 @@ export default function airPLS(
     }
 
     baseline = cho(rightHandSide);
-
     sumNegDifferences = applyCorrection(yWork, baseline, corrected);
     if (iteration === 1) {
       const { positive } = xNoiseSanPlot(corrected);
@@ -132,14 +132,11 @@ export default function airPLS(
     prevNegSum = sumNegDifferences + 0;
 
     for (let i = 1; i < l; i++) {
-      const diff = corrected[i];
-      if (controlPoints[i] < 1 && Math.abs(diff) > threshold) {
+      const diff = Math.abs(corrected[i]);
+      if (controlPoints[i] < 1 && diff > threshold * 2) {
         weights[i] = 0;
       } else {
-        const factor = diff > 0 ? -1 : 1;
-        weights[i] = Math.exp(
-          (factor * (iteration * diff)) / Math.abs(sumNegDifferences),
-        );
+        weights[i] = Math.exp(-((diff / threshold) ** 2));
       }
     }
 
@@ -196,9 +193,16 @@ function getDownSampleData(
     return { xWork: x, yWork: y, optionsWork: options, shouldDownsample };
   }
 
-  const downsampleFactor = getDownsampleFactor(y.length, maxResolution);
-  const yWork = xBinning(y, downsampleFactor);
-  const xWork = decimateIndices(x, downsampleFactor);
+  const binSize = getDownsampleFactor(y.length, maxResolution);
+  const xWork = xBinning(x, {
+    binSize,
+    keepFirstAndLast: true,
+  });
+  const yWork = xBinning(y, {
+    binSize,
+    keepFirstAndLast: true,
+  });
+
   let optionsWork = options;
 
   // Downsample controlPoints if provided, to match downsampled x and y
@@ -269,21 +273,4 @@ function getDownsampleFactor(
   targetResolution: number,
 ): number {
   return Math.max(1, Math.ceil(originalLength / targetResolution));
-}
-
-/**
- * Downsample by keeping every N-th index (decimation for x-axis).
- * @param arr - Input x-axis array.
- * @param factor - Decimation factor.
- * @returns Decimated array.
- */
-function decimateIndices(arr: DoubleArray, factor: number): Float64Array {
-  if (factor <= 1) return Float64Array.from(arr);
-
-  const result: number[] = [];
-  for (let i = 0; i < arr.length; i += factor) {
-    result.push(arr[i]);
-  }
-
-  return Float64Array.from(result);
 }
