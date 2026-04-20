@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.0](https://github.com/mljs/airpls/compare/v2.1.1...v2.2.0) (2026-04-20)
+
+
+### Features
+
+* downsampling by autoDownsample option ([#19](https://github.com/mljs/airpls/issues/19)) ([c4dfdfe](https://github.com/mljs/airpls/commit/c4dfdfe5453e59f31359c446015a29305f87f984))
+
 ## [2.1.1](https://github.com/mljs/airpls/compare/v2.1.0...v2.1.1) (2026-04-02)
 
 

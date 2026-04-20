@@ -1,6 +1,6 @@
 {
   "name": "ml-airpls",
-  "version": "2.1.1",
+  "version": "2.2.0",
   "description": "Baseline correction using adaptive iteratively reweighted penalized least",
   "type": "module",
   "exports": {
