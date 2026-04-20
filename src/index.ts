@@ -182,7 +182,7 @@ function getDownSampleData(
   options: AirPLSOptions = {},
 ) {
   const {
-    autoDownsample = true,
+    autoDownsample = false,
     maxResolution = 5000,
     controlPoints,
   } = options;
