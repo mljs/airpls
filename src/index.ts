@@ -1,12 +1,14 @@
 import type { DoubleArray, NumberArray } from 'cheminfo-types';
 import {
+  matrixCholeskySolver,
   xAbsoluteSum,
+  xBinning,
   xFindClosestIndex,
-  xMultiply,
   xNoiseSanPlot,
+  xSubtract,
+  xyInterpolateLinear,
 } from 'ml-spectra-processing';
 
-import cholesky from './choleskySolver.ts';
 import { getDeltaMatrix, updateSystem } from './utils.ts';
 
 export interface AirPLSOptions {
@@ -31,13 +33,24 @@ export interface AirPLSOptions {
   controlPoints?: NumberArray;
   /** Array of x axis ranges (as from - to), to force the baseline to cross those zones. */
   zones?: Array<{ from: number; to: number }>;
+  /**
+   * Enable automatic downsampling for large datasets to speed up computation.
+   * @default false
+   */
+  autoDownsample?: boolean;
+  /**
+   * Maximum resolution (number of points) before downsampling is applied.
+   * Only used if autoDownsample is true.
+   * @default 5000
+   */
+  maxResolution?: number;
 }
 
 export interface AirPLSResult {
   /** The baseline-corrected data. */
-  corrected: Float64Array;
+  corrected: NumberArray;
   /** The estimated baseline. */
-  baseline: number[];
+  baseline: NumberArray;
   /** The number of iterations performed. */
   iteration: number;
   /** The sum of negative differences (error). */
@@ -57,15 +70,25 @@ export default function airPLS(
   y: DoubleArray,
   options: AirPLSOptions = {},
 ): AirPLSResult {
-  const { weights, controlPoints } = getControlPoints(x, y, options);
-  const { maxIterations = 100, lambda = 10, tolerance = 0.001 } = options;
-  let baseline: number[] = [];
+  const { xWork, yWork, optionsWork, shouldDownsample } = getDownSampleData(
+    x,
+    y,
+    options,
+  );
+
+  const { weights, controlPoints } = getControlPoints(
+    xWork,
+    yWork,
+    optionsWork,
+  );
+  const { maxIterations = 100, lambda = 10, tolerance = 0.001 } = optionsWork;
+  let baseline: NumberArray = [];
   let iteration: number;
   let sumNegDifferences = Number.MAX_SAFE_INTEGER;
-  const corrected = Float64Array.from(y);
-  const stopCriterion = getStopCriterion(y, tolerance);
+  const corrected = Float64Array.from(yWork);
+  const stopCriterion = getStopCriterion(yWork, tolerance);
 
-  const { length } = y;
+  const { length } = yWork;
   const { lowerTriangularNonZeros, permutationEncodedArray } = getDeltaMatrix(
     length,
     lambda,
@@ -81,18 +104,21 @@ export default function airPLS(
   ) {
     const [leftHandSide, rightHandSide] = updateSystem(
       lowerTriangularNonZeros,
-      y,
+      yWork,
       weights,
     );
 
-    const cho = cholesky(leftHandSide, length, permutationEncodedArray);
+    const cho = matrixCholeskySolver(
+      leftHandSide,
+      length,
+      permutationEncodedArray,
+    );
     if (cho === null) {
       throw new Error('Cholesky decomposition failed');
     }
 
     baseline = cho(rightHandSide);
-
-    sumNegDifferences = applyCorrection(y, baseline, corrected);
+    sumNegDifferences = applyCorrection(yWork, baseline, corrected);
     if (iteration === 1) {
       const { positive } = xNoiseSanPlot(corrected);
       threshold = positive;
@@ -104,30 +130,40 @@ export default function airPLS(
     }
 
     prevNegSum = sumNegDifferences + 0;
-    const absoluteSumNegatives = Math.abs(sumNegDifferences);
 
     for (let i = 1; i < l; i++) {
-      const absDiff = Math.abs(corrected[i]);
-      const weight = Math.exp((-iteration * absDiff) / absoluteSumNegatives);
-      weights[i] =
-        controlPoints[i] < 1 && absDiff > threshold ? weight / 4 : weight;
+      const diff = Math.abs(corrected[i]);
+      if (controlPoints[i] < 1 && diff > threshold * 2) {
+        weights[i] = 0;
+      } else {
+        weights[i] = Math.exp(-((diff / threshold) ** 2));
+      }
     }
 
     weights[0] = 1;
     weights[l] = 1;
   }
 
+  // Interpolate results back to original resolution if downsampling was applied
+  let finalBaseline = baseline;
+  let finalCorrected = corrected;
+
+  if (shouldDownsample) {
+    finalBaseline = xyInterpolateLinear({ x: xWork, y: baseline }, x);
+    finalCorrected = xSubtract(y, finalBaseline);
+  }
+
   return {
-    corrected,
-    baseline,
+    corrected: finalCorrected,
+    baseline: finalBaseline,
     iteration,
     error: sumNegDifferences,
   };
 }
 
 function applyCorrection(
-  y: DoubleArray,
-  baseline: number[],
+  y: NumberArray,
+  baseline: NumberArray,
   corrected: Float64Array,
 ): number {
   let sumNegDifferences = 0;
@@ -138,6 +174,54 @@ function applyCorrection(
   }
 
   return sumNegDifferences;
+}
+
+function getDownSampleData(
+  x: DoubleArray,
+  y: DoubleArray,
+  options: AirPLSOptions = {},
+) {
+  const {
+    autoDownsample = false,
+    maxResolution = 5000,
+    controlPoints,
+  } = options;
+
+  const shouldDownsample = autoDownsample && y.length > maxResolution;
+
+  if (!shouldDownsample) {
+    return { xWork: x, yWork: y, optionsWork: options, shouldDownsample };
+  }
+
+  const binSize = getDownsampleFactor(y.length, maxResolution);
+  const xWork = xBinning(x, {
+    binSize,
+    keepFirstAndLast: true,
+  });
+  const yWork = xBinning(y, {
+    binSize,
+    keepFirstAndLast: true,
+  });
+
+  let optionsWork = options;
+
+  // Downsample controlPoints if provided, to match downsampled x and y
+  if (controlPoints) {
+    const downsampledControlPoints = new Int8Array(xWork.length);
+    for (let i = 0; i < x.length; i++) {
+      if (controlPoints[i] > 0) {
+        const closestIndex = xFindClosestIndex(xWork, x[i]);
+        downsampledControlPoints[closestIndex] = 1;
+      }
+    }
+
+    optionsWork = {
+      ...options,
+      controlPoints: downsampledControlPoints,
+    };
+  }
+
+  return { xWork, yWork, optionsWork, shouldDownsample };
 }
 
 function getStopCriterion(y: DoubleArray, tolerance: number): number {
@@ -152,7 +236,7 @@ function getControlPoints(
 ): { weights: NumberArray; controlPoints: NumberArray } {
   const { length } = x;
   const { controlPoints = Int8Array.from({ length }).fill(0) } = options;
-  const { zones = [], weights = Float64Array.from({ length }).fill(0.5) } =
+  const { zones = [], weights = Float64Array.from({ length }).fill(1) } =
     options;
 
   if (x.length !== y.length) {
@@ -173,10 +257,20 @@ function getControlPoints(
   }
 
   return {
-    weights:
-      'controlPoints' in options || zones.length > 0
-        ? xMultiply(weights, controlPoints)
-        : weights,
+    weights,
     controlPoints,
   };
+}
+
+/**
+ * Calculate the downsampling factor to reduce data to target resolution.
+ * @param originalLength - Original data length.
+ * @param targetResolution - Target number of points.
+ * @returns Downsampling factor.
+ */
+function getDownsampleFactor(
+  originalLength: number,
+  targetResolution: number,
+): number {
+  return Math.max(1, Math.ceil(originalLength / targetResolution));
 }

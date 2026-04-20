@@ -41,7 +41,7 @@
   "dependencies": {
     "cheminfo-types": "^1.14.0",
     "cuthill-mckee": "^1.0.0",
-    "ml-spectra-processing": "^14.19.0"
+    "ml-spectra-processing": "^14.26.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
@@ -52,6 +52,7 @@
     "eslint-config-cheminfo-typescript": "^21.0.0",
     "prettier": "^3.8.1",
     "rimraf": "^6.1.0",
+    "spectrum-generator": "^8.1.1",
     "typescript": "^5.9.0",
     "vitest": "^4.0.18"
   }
